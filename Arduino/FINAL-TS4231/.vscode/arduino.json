@@ -1,0 +1,5 @@
+{
+    "sketch": "FINAL-TS4231.ino",
+    "board": "arduino:sam:arduino_due_x_dbg",
+    "port": "COM3"
+}
