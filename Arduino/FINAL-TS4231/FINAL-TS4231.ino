@@ -19,14 +19,20 @@
 ///////////////////////////////////////////
 
     //E pin then D pin.
-    int EDPins[][2] = {{25, 23}, {53, 51}};
+    int EDPins[][2] = {{25, 23}/*, {}, {}, {}, {}, {}, {}*/};
     //When pin drops low, that's the start of an IR signal.
     TS4231 sensor0(EDPins[0][0], EDPins[0][1]);
-    TS4231 sensor1(EDPins[1][0], EDPins[1][1]);
+    //TS4231 sensor1(EDPins[1][0], EDPins[1][1]);
+    //TS4231 sensor2(EDPins[2][0], EDPins[2][1]);
+    //TS4231 sensor3(EDPins[3][0], EDPins[3][1]);
+    //TS4231 sensor4(EDPins[4][0], EDPins[4][1]);
+    //TS4231 sensor5(EDPins[5][0], EDPins[5][1]);
+    //TS4231 sensor6(EDPins[6][0], EDPins[6][1]);
+
 
     //Stores all the memory addresses of each sensor
     //Be sure to dereference when calling! Use the "->" operator. 
-    TS4231* sensorList[] = {&sensor0, &sensor1};
+    TS4231* sensorList[] = {&sensor0/*, &sensor1, &sensor2, &sensor3, &sensor4, &sensor5, &sensor6*/};
     int sensorListLength = sizeof(sensorList)/sizeof(sensorList[0]);
 
 
@@ -75,7 +81,7 @@
 
     //This MUST be a power of two. The optimisation within the Ring buffer uses modulus, 
     //which when optimised, uses a BITWISE AND.
-    #define DATA_CIRC_BUFFER_LENGTH    16
+    #define DATA_CIRC_BUFFER_LENGTH    32
     #define CIRC_BUFFER_MODULUS_MASK (DATA_CIRC_BUFFER_LENGTH - 1)
     //unsigned int = 32 bit number 
     //first 6 bits -> Sensor 
@@ -109,6 +115,7 @@ void setup(){
 //One cycle of Master/Slave loop should be about 30Hz, or a period of 0.033s
 //Master Lighthouse gives its 2 updates in the first 0.0167s, then the Slave's 2 in the second 0.167s.
 //Cycle is always: Master, Slave, Sweep. (Repeat)
+//NOTE: The sweep time cannot be larger than 1/120th of a second (8333 microseconds), so discard those any bigger than that.
 void loop(){
     //Find Sensor from sensorList that has Triggered Interrupt. Check if a change HAS occured. 
     //Check through every sensor, and find which one triggered the intterupt
@@ -148,6 +155,8 @@ void loop(){
                     //Gets the latest write position, and adds this number to the buffer to be sent.
                     dataCircularBuffer[bufferWriteIndex & CIRC_BUFFER_MODULUS_MASK] = 
                             (i << 26) | (0 << 25) | (OOTX_MASTER.axis << 24) | sweepTime;
+                    //SerialTX.print("Sweep Time - ");
+                    //SerialTX.println(sweepTime);
                 }
                 else{
                     sweepTime = sensorList[i]->highToLowTime - OOTX_SLAVE.startTime;
@@ -155,6 +164,14 @@ void loop(){
                     //Gets the latest write position, and adds this number to the buffer to be sent.
                     dataCircularBuffer[bufferWriteIndex & CIRC_BUFFER_MODULUS_MASK] = 
                             (i << 26) | (1 << 25) | (OOTX_SLAVE.axis << 24) | sweepTime;
+                    //Serial.print("Sweep Time - ");
+                    //Serial.println(sweepTime);
+                }
+                //This is the end, reset OOTX pulses, and restart the cycle.
+                if(i == sensorListLength - 1){
+                    OOTX_MASTER.clear();
+                    OOTX_SLAVE.clear();
+                    clearAllSensorData();
                 }
                 bufferWriteIndex++;
                 bufferFillLength++;
@@ -209,19 +226,14 @@ void TS4231_configSensors(){
 void TS4231_attachIntterupts(){
     //Just copy and paste this, only change the first value in the list, and iterate the ISR up.
     attachInterrupt(digitalPinToInterrupt(EDPins[0][0]), ISR_sensor0, CHANGE);
-    attachInterrupt(digitalPinToInterrupt(EDPins[1][0]), ISR_sensor1, CHANGE);
+    //attachInterrupt(digitalPinToInterrupt(EDPins[1][0]), ISR_sensor1, CHANGE);
 }
 
-//ISRs can't take parameters :(
+//ISRs can't take parameters or serial communications :(
 void ISR_sensor0(){
     unsigned int time = micros();
     sensor0.isLow = !digitalRead(sensor0.E_pin);
     sensor0.interruptTriggered = true;
-    //Not included to improve speed
-    //Serial.println("Sensor ");
-    //Serial.print(sensorID);
-    //Serial.print(" just changed to ");
-    //Serial.print(pinRead);
 
     //True will be low.
     //If it is low, sets the highToLowTime to now.
@@ -231,15 +243,10 @@ void ISR_sensor0(){
     else
         sensor0.lowToHighTime = time;
 }
-void ISR_sensor1(){
+/*void ISR_sensor1(){
     unsigned int time = micros();
     sensor1.isLow = !digitalRead(sensor1.E_pin);
     sensor1.interruptTriggered = true;
-    //Not included to improve speed
-    //Serial.println("Sensor ");
-    //Serial.print(sensorID);
-    //Serial.print(" just changed to ");
-    //Serial.print(pinRead);
 
     //True will be low.
     //If it is low, sets the highToLowTime to now.
@@ -248,7 +255,7 @@ void ISR_sensor1(){
         sensor1.highToLowTime = time;
     else
         sensor1.lowToHighTime = time;
-}
+}*/
 
 void sendData(){
     //Modulo operator, so that we can loop through everything.
@@ -259,29 +266,28 @@ void sendData(){
     }
 
     //Send data over chosen Serial port
-    SerialTX.print("Data sent: ");
+    //SerialTX.print("Data sent: ");
     int sensor = 0;
     int lighthouse = 0;
     int axis = 0;
     int sweep = 0;
     //Start from most significant bit, and go down. i controls the bitshift
+    
     for (int i = 31; i >= 0; i--) {
         int bit = (data >> i) & 1;
         //SerialTX.print(bit);
-        
         if(i >= 26){
-            sensor << 1;
-            sensor | bit;
+            sensor <<= 1;
+            sensor |= bit;
         } else if(i == 25){
-            lighthouse | bit;
+            lighthouse |= bit;
         } else if(i == 24){
-            axis | bit;
+            axis |= bit;
         } else{
-            sweep << 1;
-            sweep | bit;
+            sweep <<= 1;
+            sweep |= bit;
         }
     }
-    /*
     SerialTX.print(" Sensor - ");
     SerialTX.print(sensor);
     SerialTX.print(" Lighthouse - ");
@@ -290,11 +296,8 @@ void sendData(){
     SerialTX.print(axis);
     SerialTX.print(" Sweep Time - ");
     SerialTX.print(sweep);
-    */
-    sprintf(new char[64], "Sensor - %hu; Lighthouse - %hu; Axis - %hu; Sweep Time - %hu", 
-            sensor, lighthouse, axis, sweep);
     SerialTX.println();
-
+    
     //SerialTX.println(dataCircularBuffer[bufferReadIndex & CIRC_BUFFER_MODULUS_MASK], BIN);
     bufferReadIndex++;
     bufferFillLength--;
@@ -310,7 +313,8 @@ void extractOOTXData(TS4231* sensor, OotxPulseInfo* OOTX){
     OOTX->startTime = sensor->highToLowTime;
     OOTX->endTime = sensor->lowToHighTime;
     int OOTXData = deltaTime_to_OOTXData(OOTX->endTime - OOTX->startTime);
-
+    //SerialTX.print("OOTX DATA - ");
+    //SerialTX.println(OOTXData);
     //We don't want to mistake a sweep with an OOTX var, or to have a long OOTX data value.
     //Only place this could happen is if it's just booted up.
     if(OOTXData < 0 || OOTXData > 7){
@@ -318,6 +322,7 @@ void extractOOTXData(TS4231* sensor, OotxPulseInfo* OOTX){
         //The only place where a sweep is valid is where both are defined, so if one is not defined, clear them all.
         OOTX_MASTER.clear();
         OOTX_SLAVE.clear();
+        clearAllSensorData();
         return;
     }
     
