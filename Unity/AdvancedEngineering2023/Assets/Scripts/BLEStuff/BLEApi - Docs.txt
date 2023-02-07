@@ -1,0 +1,20 @@
+BleApi
+
+Classes:
+	-DeviceUpdate: Starts/Stops Scanning for Devices, Can get a list of available devices as well.
+		-id = the deviceID
+		-isConnectable = is it connectable?
+		-isConnectableUpdated = just tells you when its updated
+		-name = the name
+		-nameUpdated = just tells you when its updated
+	-Service: Can Scan and Poll Services
+	-Characteristic: Can Scan and Poll Characteristics, Can Subscribe to one
+	-BLEData: Can Send or Read(poll) data sent 1 byte at a time, or can quit.
+		-buf = the data
+		-size = size
+		-deviceID = What device this came from
+		-serviceUuid = the serivice this came from
+		-characteristicUuid = the characteristic this came from
+	-ErrorMessage: Can get an error message
+		-msg = error message
+	-ScanStatus: Enum-Processing, available, finished

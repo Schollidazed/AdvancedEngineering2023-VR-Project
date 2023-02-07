@@ -1,0 +1,6 @@
+Generic Access: 	00001800-0000-1000-8000-00805F9B34FB
+Generic Attribute:	00001801-0000-1000-8000-00805F9B34FB
+
+This is the one we're looking for in an output.
+Unknown Service:			0000FFE0-0000-1000-8000-00805F9B34FB
+	Unknown Characteristic:	0000FFE1-0000-1000-8000-00805F9B34FB

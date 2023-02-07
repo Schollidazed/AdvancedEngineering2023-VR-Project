@@ -272,7 +272,7 @@ void sendData(){
     int axis = 0;
     int sweep = 0;
     //Start from most significant bit, and go down. i controls the bitshift
-    
+    //TODO: Send 32 bit number AS a number.
     for (int i = 31; i >= 0; i--) {
         int bit = (data >> i) & 1;
         //SerialTX.print(bit);
