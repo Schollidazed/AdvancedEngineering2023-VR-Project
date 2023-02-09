@@ -10,27 +10,20 @@ public class IRSensor : MonoBehaviour
 
     private int sweepTime;
 
-    private double xAngle, yAngle;
+    private double xAngleTmp, yAngleTmp;
+
+    //Should we include a buffer for incoming data?
 
     //Assume that runtime detected that it belongs to this sensor.
 
-    void Start()
+    public void updatePosition(UInt32 data, out double x0, out double y0, out double x1, out double y1)
     {
-        
-    }
-
-    void Update()
-    {
-
-    }
-    public void updatePosition(UInt32 data)
-    {
-        processData(data);
-        setAngle();
+        ProcessData(data);
+        SetAngle(out x0, out y0, out x1, out y1);
     }
 
     //parses sent data from runtime, gives lighthouse, axis, and sweeptime value.
-    private void processData(UInt32 data)
+    private void ProcessData(UInt32 data)
     {
         for (int i = 25; i >= 0; i--)
         {
@@ -56,17 +49,19 @@ public class IRSensor : MonoBehaviour
             }
         }
     }
-
-    private void setAngle()
+    //Sets the angle using a predefined function. 
+    private void SetAngle(out double x0, out double y0, out double x1, out double y1)
     {
         //Check Validity of Sweeptime
-        if (sweepTime >= 8000){return;}
+        if (sweepTime >= 8000){x0 = -1; x1 = -1; y0 = -1; y1 = -1; return;}
 
         //Check axis, and apply correct angle
-        if (axis == 0) { xAngle = sweepTimeToDegrees(sweepTime); }
-        else { yAngle = sweepTimeToDegrees(sweepTime); }
-    }
+        if (axis == 0) { xAngleTmp = sweepTimeToDegrees(sweepTime); }
+        else { yAngleTmp = sweepTimeToDegrees(sweepTime); }
 
+        if (lighthouse == 0) {x0 = xAngleTmp; y0 = yAngleTmp; x1 = -1; y1 = -1; return;}
+        else { x0 = -1; y0 = -1; x1 = xAngleTmp; y1 = yAngleTmp; return;}
+    }
     private double sweepTimeToDegrees(int time) { return ( (360 * (double) time) * (60 / (10 ^ 6))); }
 
     

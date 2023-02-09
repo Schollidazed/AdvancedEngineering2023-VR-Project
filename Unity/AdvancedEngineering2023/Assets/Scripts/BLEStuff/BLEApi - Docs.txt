@@ -2,6 +2,7 @@ BleApi
 
 Classes:
 	-DeviceUpdate: Starts/Stops Scanning for Devices, Can get a list of available devices as well.
+		PollDevice(): Sets the device passed through to a new device.
 		-id = the deviceID
 		-isConnectable = is it connectable?
 		-isConnectableUpdated = just tells you when its updated

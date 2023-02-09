@@ -28,11 +28,12 @@ public class Demo : MonoBehaviour
     public Text errorText;
 
     Transform scanresultRoot;
+    //Device ID -> ("Name" and "IsConnectable")
+    Dictionary<string, Dictionary<string, string>> devices = new Dictionary<string, Dictionary<string, string>>();
     public string selectedDeviceId;
     public string selectedServiceId;
     Dictionary<string, string> characteristicNames = new Dictionary<string, string>();
     public string selectedCharacteristicId;
-    Dictionary<string, Dictionary<string, string>> devices = new Dictionary<string, Dictionary<string, string>>();
     string lastError;
 
     // Start is called before the first frame update
