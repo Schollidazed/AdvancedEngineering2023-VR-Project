@@ -9,7 +9,11 @@ public class TrackSingleSensor : MonoBehaviour
     public bool hasFoundBLE = false;
     public bool isSubscribed = false;
 
-    IRSensor sensor1 = new IRSensor();
+    public Canvas lighthouse0;
+
+    public RectTransform sensor0rep;
+    IRSensor sensor0 = new IRSensor();
+    
 
     public string bleDeviceId = "ADV-ENG2023";
     public string bleServiceId = "0000FFE0-0000-1000-8000-00805F9B34FB";
@@ -23,20 +27,39 @@ public class TrackSingleSensor : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
+        /*
         //Find our BLE Device, and connect to it
         FindBLEDevice(bleDeviceId);
         BleApi.SubscribeCharacteristic(bleDeviceId, bleServiceId, bleCharacteristicId, false);
+        */
     }
 
     // Update is called once per frame
     void Update()
-    {   
+    {
+        int lighthouse0Width = (int) lighthouse0.pixelRect.width;
+        int lighthouse0Height = (int) lighthouse0.pixelRect.height;
+
         //Parse data
-        BleApi.BLEData data = new BleApi.BLEData();
+        /*BleApi.BLEData data = new BleApi.BLEData();
         BleApi.PollData(out data, false);
-        String ParsedData = BitConverter.ToString(data.buf, 0, data.size);
+        UInt32 ParsedData = BitConverter.ToUInt32(data.buf, 0);
 
         //Consider using this to send data? https://www.ascii-code.com/
+        int sensor = (int) ParsedData >> 26;
+        double x0, y0, x1, y1;
+
+        switch (sensor)
+        {
+            case 0: sensor0.updatePosition(ParsedData, out x0, out y0, out x1, out y1); break;
+            default: break;
+        }*/
+
+        sensor0rep.anchoredPosition = new Vector2(lighthouse0Width, lighthouse0Height);
+
+
+
+        //NOTE: Cavas size is variable. We need to either lock the size, or scale the values to it.
     }
 
     private void OnApplicationQuit()
