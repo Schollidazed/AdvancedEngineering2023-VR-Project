@@ -1,9 +1,6 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using UnityEngine;
 
-public class IRSensor : MonoBehaviour
+public class IRSensor
 {
     private int lighthouse;
     private int axis;

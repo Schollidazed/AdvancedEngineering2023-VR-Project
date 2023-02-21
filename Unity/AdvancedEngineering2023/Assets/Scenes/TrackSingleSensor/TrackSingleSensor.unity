@@ -205,7 +205,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 0
+  m_RootOrder: 1
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &254161481
 GameObject:
@@ -341,9 +341,10 @@ MonoBehaviour:
   isSubscribed: 0
   lighthouse0: {fileID: 254161484}
   sensor0rep: {fileID: 1303210549}
-  bleDeviceId: ADV-ENG2023
+  bleDeviceName: ADV-ENG2023
   bleServiceId: 0000FFE0-0000-1000-8000-00805F9B34FB
   bleCharacteristicId: 0000FFE1-0000-1000-8000-00805F9B34FB
+  hasSubscribed: 0
 --- !u!4 &845136427
 Transform:
   m_ObjectHideFlags: 0
@@ -357,7 +358,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 2
+  m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1303210548
 GameObject:
@@ -604,7 +605,7 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 1
+  m_RootOrder: 2
   m_LocalEulerAnglesHint: {x: 50, y: -30, z: 0}
 --- !u!1 &1879702856
 GameObject:
