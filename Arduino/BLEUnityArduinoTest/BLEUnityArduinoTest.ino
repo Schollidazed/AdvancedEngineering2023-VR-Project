@@ -15,10 +15,11 @@ int sweep = 0;
 void setup(){
     while(!SerialTX){}
 
-    Serial.begin(115200);
-    SerialTX.begin(115200);
+    //Serial.begin(115200);
+    SerialTX.begin(9600);
+    Serial.begin(9600);
 
-    Serial.println("Hello, please wait...");
+    //Serial.println("Hello, please wait...");
 
     delay(500);
     SerialTX.println("AT");
@@ -28,15 +29,16 @@ void setup(){
     //0 = Slave, 1 = Master
     SerialTX.println("AT+ROLE0");
     // 0: 9600, 1: 19200, 2: 38400, 3: 57600, 4: 115200, 5: 4800, 6: 2400, 7: 1200, 8: 230400
-    SerialTX.println("AT+BAUD4");
+    SerialTX.println("AT+BAUD0");
 
-    Serial.println("READY");
+    //Serial.println("READY");
 }
 
 
 void loop(){
+    
     sweep++;
-    if (sweep >= 8333){
+    if (sweep >= 8000){
         sweep = 0;
     }
 
@@ -50,12 +52,20 @@ void loop(){
     data <<= 24;
     data |= sweep;
     
-    String message = "";
+    // SerialTX.write(data);
 
-    for (int i = 31; i >= 0; i--) {
-        int bit = (data >> i) & 1;
-        message.concat(bit);
-    }
+    String message = String(data);
+
+    // for (int i = 31; i >= 0; i--) {
+    //     int bit = (data >> i) & 1;
+    //     message.concat(bit);
+    // }
+    message.concat(";");
+    SerialTX.print(message);
+    Serial.println(message);
     
-    SerialTX.println(message);
+   //SerialTX.write(0x12);
+   //SerialTX.println("ARGGGHH");
+   //BLE sends text through hex code.
+   delay(8);
 }   

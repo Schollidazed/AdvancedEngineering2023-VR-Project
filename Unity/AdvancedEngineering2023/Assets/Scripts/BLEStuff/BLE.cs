@@ -165,7 +165,7 @@ public class BLE
         while (Impl.PollService(out service, true) != Impl.ScanStatus.FINISHED)
             Debug.Log("service found: " + service.uuid);
         // wait some delay to prevent error
-        Thread.Sleep(200);
+        Thread.Sleep(100);
         Impl.ScanCharacteristics(deviceId, serviceUuid);
         Impl.Characteristic c = new Impl.Characteristic();
         while (Impl.PollCharacteristic(out c, true) != Impl.ScanStatus.FINISHED)
@@ -187,14 +187,19 @@ public class BLE
     {
         if (isConnected)
             return false;
+
+        //Tries to retrieve profile: Services and Characteristics. If it fails, throws the exception.
         Debug.Log("retrieving ble profile...");
         RetrieveProfile(deviceId, serviceUuid);
         if (GetError() != "Ok")
             throw new Exception("Connection failed: " + GetError());
+
+        //Attempts to subscribe
         Debug.Log("subscribing to characteristics...");
         bool result = Subscribe(deviceId, serviceUuid, characteristicUuids);
         if (GetError() != "Ok" || !result)
             throw new Exception("Connection failed: " + GetError());
+
         isConnected = true;
         return true;
     }
@@ -231,8 +236,8 @@ public class BLE
 
         if (result)
         {
-            Debug.Log("Size: " + packageReceived.size);
-            Debug.Log("From: " + packageReceived.deviceId);
+            //Debug.Log("Size: " + packageReceived.size);
+            //Debug.Log("From: " + packageReceived.deviceId);
 
             if (packageReceived.size > 512)
                 throw new ArgumentOutOfRangeException("Package too large.");

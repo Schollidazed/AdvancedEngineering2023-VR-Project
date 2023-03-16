@@ -337,14 +337,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 819f15359d8049c408a69116472e19c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  hasFoundBLE: 0
-  isSubscribed: 0
-  lighthouse0: {fileID: 254161484}
+  lighthouse0: {fileID: 1398948660}
   sensor0rep: {fileID: 1303210549}
-  bleDeviceName: ADV-ENG2023
-  bleServiceId: 0000FFE0-0000-1000-8000-00805F9B34FB
-  bleCharacteristicId: 0000FFE1-0000-1000-8000-00805F9B34FB
-  hasSubscribed: 0
+  isScanning: 0
+  isFinishedScanning: 0
+  isConnecting: 0
+  targetDeviceName: ADV-ENG2023
+  serviceUuid: '{0000FFE0-0000-1000-8000-00805F9B34FB}'
+  characteristicUuids:
+  - '{0000FFE1-0000-1000-8000-00805F9B34FB}'
+  deviceId: 
+  bleDeviceID: BluetoothLE#BluetoothLE58:96:1d:5b:b7:00-a0:6c:65:cf:7e:67
+  bleCharacteristicName: DSDTECH
+  ringBufferLength: 0
 --- !u!4 &845136427
 Transform:
   m_ObjectHideFlags: 0
@@ -470,10 +475,10 @@ RectTransform:
   m_Father: {fileID: 254161485}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 0}
-  m_AnchorMax: {x: 1, y: 1}
+  m_AnchorMin: {x: 0.5, y: 0}
+  m_AnchorMax: {x: 0.5, y: 1}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 0, y: 0}
+  m_SizeDelta: {x: 1300, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1398948661
 MonoBehaviour:

@@ -10,7 +10,7 @@
 #define LowestTickCount         2501
 #define TickCountRange          500
 
-#define SerialTX                Serial
+#define SerialTX                Serial1
 
 ///////////////////////////////////////////
 ///                                     ///
