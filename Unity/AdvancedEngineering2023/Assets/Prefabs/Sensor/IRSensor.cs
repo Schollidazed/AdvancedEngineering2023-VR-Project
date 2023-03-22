@@ -1,14 +1,5 @@
 using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Globalization;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
 using UnityEngine;
-using UnityEngine.XR;
-
 public class IRSensor
 {
     private int lighthouse;
@@ -21,14 +12,19 @@ public class IRSensor
     public Vector2 lighthouse0xy;
     public Vector2 lighthouse1xy;
 
-    //Should we include a buffer for incoming data?
+    RateOfChangeLimiter limiter;
 
     //Assume that runtime detected that it belongs to this sensor.
 
-    public void updatePosition(UInt32 data, out double x0, out double y0, out double x1, out double y1)
+    public IRSensor(double MaxRate)
+    {
+        limiter = new RateOfChangeLimiter(MaxRate);
+    }
+
+    public void updatePosition(UInt32 data)
     {
         ProcessData(data);
-        SetAngle(out x0, out y0, out x1, out y1);
+        SetAngle();
     }
 
     //parses sent data from runtime, gives lighthouse, axis, and sweeptime value.
@@ -38,20 +34,14 @@ public class IRSensor
         for (int i = 25; i >= 0; i--)
         {
             int bit = (int) (data >> i) & 1;
-            //Debug.Log("Num of Loops: " + i + "Bit: " + bit);
-            //SerialTX.print(bit);
-            //if (i >= 26)
-            //{
-            //  sensor <<= 1;
-            //  sensor |= bit;
-            //}
+            //We should already have the Sensor data, no need to process that.
             if (i == 25)
             {
-                this.lighthouse |= bit;
+                this.lighthouse = bit;
             }
             else if (i == 24)
             {
-                this.axis |= bit;
+                this.axis = bit;
             }
             else
             {
@@ -61,28 +51,40 @@ public class IRSensor
         }
         this.sweepTime = tempTime;
 
-        //Debug.Log("Lighthouse: " + this.lighthouse);
-        //Debug.Log("Axis: " + this.axis);
-        //Debug.Log("Sweep Time: " + this.sweepTime);
+        Debug.Log("Processed: " + data + " Lighthouse: " + this.lighthouse + " Axis: " + this.axis + " Sweep Time: " + this.sweepTime);
     }
     //Sets the angle using a predefined function. 
-    private void SetAngle(out double x0, out double y0, out double x1, out double y1)
+    private void SetAngle()
     {
         //Check Validity of Sweeptime
-        if (sweepTime >= 8000){x0 = -1; x1 = -1; y0 = -1; y1 = -1; return;}
+        if (this.sweepTime >= 8333){Debug.Log("Sweep Time Was Too High."); return;}
 
         //Check axis, and apply correct angle
+        //0 axis = y angle
+        //1 axis = x angle
         if (axis == 0) { 
-            xAngleTmp = sweepTimeToDegrees(sweepTime);
+            this.yAngleTmp = sweepTimeToDegrees(this.sweepTime);
             //Debug.Log("X: " + xAngleTmp);
         }
         else { 
-            yAngleTmp = sweepTimeToDegrees(sweepTime);
+            this.xAngleTmp = sweepTimeToDegrees(this.sweepTime);
             //Debug.Log("Y: " + yAngleTmp);
         }
 
-        if (lighthouse == 0) {x0 = xAngleTmp; y0 = yAngleTmp; x1 = -1; y1 = -1; return;}
-        else { x0 = -1; y0 = -1; x1 = xAngleTmp; y1 = yAngleTmp; return;}
+        if (this.lighthouse == 0) 
+        {
+            this.lighthouse0xy.x = (float) this.xAngleTmp; 
+            this.lighthouse0xy.y = (float) this.yAngleTmp;
+            //Debug.Log("Lighthouse is 0"); 
+            return;
+        }
+        else if (this.lighthouse == 1)
+        { 
+            this.lighthouse1xy.x = (float)limiter.calculate(this.xAngleTmp);
+            this.lighthouse1xy.y = (float)limiter.calculate(this.yAngleTmp);
+            //Debug.Log("Lighthouse is 1"); 
+            return;
+        }
     }
     private double sweepTimeToDegrees(uint time) { 
         return ( (360.0 * (double) time) * (60.0 / Math.Pow(10.0, 6.0) ) ); 

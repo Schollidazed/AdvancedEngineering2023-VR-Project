@@ -1,14 +1,15 @@
 //FINAL-TS4231.ino
 //CODE WRITTEN BY SAM HOLLIDAY - CHICKENWINGJOHNNY - ARGS 22-23 Advanced Engineering
 //Purpose - To send controller data about "Sweep times" and Buttons over serial.
-
+//NOTE: In order for this to properly work, both lighthouses must be active.
 #include "Header/ts4231.h"
 #include "Header/ts4231.cpp"
 
-#define ts4231_LIGHT_TIMEOUT    3000 
-#define MicrosecondsToTicks     48
-#define LowestTickCount         2501
-#define TickCountRange          500
+#define ts4231_LIGHT_TIMEOUT        3000 
+#define MicrosecondsToTicks         48
+#define LowestTickCount             2501
+#define TickCountRange              500
+#define MAX_LIGHTHOUSE_SWEEPTIME    8333
 
 #define SerialTX                Serial1
 
@@ -19,7 +20,7 @@
 ///////////////////////////////////////////
 
     //E pin then D pin.
-    int EDPins[][2] = {{25, 23}/*, {}, {}, {}, {}, {}, {}*/};
+    int EDPins[][2] = {{53, 23}/*, {}, {}, {}, {}, {}, {}*/};
     //When pin drops low, that's the start of an IR signal.
     TS4231 sensor0(EDPins[0][0], EDPins[0][1]);
     //TS4231 sensor1(EDPins[1][0], EDPins[1][1]);
@@ -98,16 +99,30 @@
 void setup(){
     while(!SerialTX){}
 
-    SerialTX.begin(115200);
+    SerialTX.begin(9600);
+    Serial.begin(9600);
+
+    //Serial.println("Hello, please wait...");
+
+    delay(500);
+    SerialTX.println("AT");
+    delay(500);
+    SerialTX.println("AT+NAMEADV-ENG2023"); 
+    delay(500);
+    //0 = Slave, 1 = Master
+    SerialTX.println("AT+ROLE0");
+    // 0: 9600, 1: 19200, 2: 38400, 3: 57600, 4: 115200, 5: 4800, 6: 2400, 7: 1200, 8: 230400
+    SerialTX.println("AT+BAUD0");
+
     TS4231_configSensors();
 
-    SerialTX.println();
-    SerialTX.print("Number of Sensors ");
-    SerialTX.println(sensorListLength);
+    Serial.println();
+    Serial.print("Number of Sensors ");
+    Serial.println(sensorListLength);
 
-    SerialTX.println("READY");
+    Serial.println("READY");
 
-    delay(2000);
+    delay(1000);
 
     TS4231_attachIntterupts();
 }
@@ -128,7 +143,7 @@ void loop(){
                 sensorList[i]->lowToHighTime && 
                 sensorList[i]->lowToHighTime > sensorList[i]->highToLowTime){
             //Only one of these conditions can be activated per sensorList
-            //IF BUFFER IS FULL GET OUTTA THERE AND READDD
+            //IF BUFFER IS FULL GET OUTTA THERE AND READDD PULEEEASEEEEUH
             if(bufferFillLength == DATA_CIRC_BUFFER_LENGTH){
                 break;
             }
@@ -144,6 +159,13 @@ void loop(){
                 extractOOTXData(sensorList[i], &OOTX_SLAVE);
                 clearAllSensorData();
             }
+
+            //Need to create conditions where...
+            //  SLAVE cannot be found, and the current setting is a sweep
+            //  MASTER cannot be found, and the current setting is a sweep
+            //But we only know that it's master/slave from it going in order. 
+            //If the object goes out of frame of one lighthouse, it's impossible to tell whether the incoming signal is slave or master...
+            //Maybe by finding the time elapsed between signals, we can determine whether it's a slave or master signal...
             
             //IF Both SLAVE and MASTER are defined
             //Must be a sweep.
@@ -153,17 +175,23 @@ void loop(){
                     sweepTime = sensorList[i]->highToLowTime - OOTX_MASTER.startTime;
                     //SensorID, then LighthouseID, then AxisID, then the sweepTime
                     //Gets the latest write position, and adds this number to the buffer to be sent.
-                    dataCircularBuffer[bufferWriteIndex & CIRC_BUFFER_MODULUS_MASK] = 
+                    if(sweepTime <= MAX_LIGHTHOUSE_SWEEPTIME){
+                        dataCircularBuffer[bufferWriteIndex & CIRC_BUFFER_MODULUS_MASK] = 
                             (i << 26) | (0 << 25) | (OOTX_MASTER.axis << 24) | sweepTime;
+                        bufferWriteIndex++;
+                        bufferFillLength++;
+                    }
                     //SerialTX.print("Sweep Time - ");
                     //SerialTX.println(sweepTime);
                 }
                 else{
                     sweepTime = sensorList[i]->highToLowTime - OOTX_SLAVE.startTime;
-                    //SensorID, then LighthouseID, then AxisID, then the sweepTime
-                    //Gets the latest write position, and adds this number to the buffer to be sent.
-                    dataCircularBuffer[bufferWriteIndex & CIRC_BUFFER_MODULUS_MASK] = 
+                    if(sweepTime <= MAX_LIGHTHOUSE_SWEEPTIME) {
+                        dataCircularBuffer[bufferWriteIndex & CIRC_BUFFER_MODULUS_MASK] = 
                             (i << 26) | (1 << 25) | (OOTX_SLAVE.axis << 24) | sweepTime;
+                        bufferWriteIndex++;
+                        bufferFillLength++;
+                    }
                     //Serial.print("Sweep Time - ");
                     //Serial.println(sweepTime);
                 }
@@ -173,8 +201,6 @@ void loop(){
                     OOTX_SLAVE.clear();
                     clearAllSensorData();
                 }
-                bufferWriteIndex++;
-                bufferFillLength++;
             }
 
         }
@@ -266,39 +292,42 @@ void sendData(){
     }
 
     //Send data over chosen Serial port
-    //SerialTX.print("Data sent: ");
-    int sensor = 0;
-    int lighthouse = 0;
-    int axis = 0;
-    int sweep = 0;
-    //Start from most significant bit, and go down. i controls the bitshift
-    //TODO: Send 32 bit number AS a number.
-    for (int i = 31; i >= 0; i--) {
-        int bit = (data >> i) & 1;
-        //SerialTX.print(bit);
-        if(i >= 26){
-            sensor <<= 1;
-            sensor |= bit;
-        } else if(i == 25){
-            lighthouse |= bit;
-        } else if(i == 24){
-            axis |= bit;
-        } else{
-            sweep <<= 1;
-            sweep |= bit;
-        }
-    }
-    SerialTX.print(" Sensor - ");
-    SerialTX.print(sensor);
-    SerialTX.print(" Lighthouse - ");
-    SerialTX.print(lighthouse);
-    SerialTX.print(" Axis - ");
-    SerialTX.print(axis);
-    SerialTX.print(" Sweep Time - ");
-    SerialTX.print(sweep);
-    SerialTX.println();
+    SerialTX.print(data);
+    SerialTX.print(";");
+    //This line's just for debug...
+    Serial.println(data);
     
-    //SerialTX.println(dataCircularBuffer[bufferReadIndex & CIRC_BUFFER_MODULUS_MASK], BIN);
+    //Example Breakdown:
+    // int sensor = 0;
+    // int lighthouse = 0;
+    // int axis = 0;
+    // int sweep = 0;
+    // //Start from most significant bit, and go down. i controls the bitshift
+    // for (int i = 31; i >= 0; i--) {
+    //     int bit = (data >> i) & 1;
+    //     //SerialTX.print(bit);
+    //     if(i >= 26){
+    //         sensor <<= 1;
+    //         sensor |= bit;
+    //     } else if(i == 25){
+    //         lighthouse |= bit;
+    //     } else if(i == 24){
+    //         axis |= bit;
+    //     } else{
+    //         sweep <<= 1;
+    //         sweep |= bit;
+    //     }
+    // }
+    // Serial.print(" Sensor - ");
+    // Serial.print(sensor);
+    // Serial.print(" Lighthouse - ");
+    // Serial.print(lighthouse);
+    // Serial.print(" Axis - ");
+    // Serial.print(axis);
+    // Serial.print(" Sweep Time - ");
+    // Serial.print(sweep);
+    // Serial.println();
+    
     bufferReadIndex++;
     bufferFillLength--;
 }
