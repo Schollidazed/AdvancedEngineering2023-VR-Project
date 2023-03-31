@@ -13,6 +13,7 @@ public class Blaster : MonoBehaviour
     public Transform spawnPoint;
     public float fireSpeed = 20;
 
+
     public InputActionProperty blasterActivate;
 
     private float timeElapsed = 0.0F;
@@ -35,12 +36,12 @@ public class Blaster : MonoBehaviour
 
         if ((blasterActivate.action.ReadValue<float>() >= 1F) && !hasFired)
         {
-            Debug.Log("Ding!"); 
+            //Debug.Log("Ding!"); 
 
             GameObject spawnedBullet = Instantiate(bullet);
             spawnedBullet.transform.position = spawnPoint.position;
             spawnedBullet.transform.rotation = spawnPoint.rotation;
-            //spawnedBullet.GetComponent<Rigidbody>().velocity = spawnPoint.forward * fireSpeed;
+            spawnedBullet.GetComponent<Rigidbody>().velocity = spawnPoint.forward * fireSpeed;
             Destroy(spawnedBullet, 3);
 
             hasFired = true;
@@ -48,7 +49,7 @@ public class Blaster : MonoBehaviour
 
         if(hasFired && blasterActivate.action.ReadValue<float>() == 0){
             hasFired = false;
-            Debug.Log("AGHHHHHHHH");
+           // Debug.Log("AGHHHHHHHH");
         }
     }
 }

@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class movement : MonoBehaviour
+public class bulletScript : MonoBehaviour
 {
     public GameObject bulletObject;
 
@@ -15,6 +15,6 @@ public class movement : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        bulletObject.transform.position = transform.position + (transform.forward);
+       //bulletObject.transform.position = transform.position + transform.forward;
     }
 }
