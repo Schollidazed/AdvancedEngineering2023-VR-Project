@@ -40,7 +40,6 @@ public class TrackSingleSensor : MonoBehaviour
 
         Debug.Log("Data: " + arduino.getSensorData(0, 0).x + " / " + arduino.getSensorData(0, 0).y);
 
-        //Axis 
         sensor0rep.anchoredPosition = new Vector2(
             (float)(arduino.getSensorData(0, 0).x * (lighthouse0Width / 172.2)),
             (float)(arduino.getSensorData(0, 0).y * (lighthouse0Width / 172.2))

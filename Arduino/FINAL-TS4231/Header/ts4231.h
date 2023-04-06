@@ -34,15 +34,16 @@ class TS4231 {
     uint8_t configDevice(uint16_t config_val = CFG_WORD);
     bool goToWatch(void);
 
-    bool isLow;
+    volatile bool isLow;
 
     int E_pin;
     int D_pin;
 
-    bool interruptTriggered;
+    volatile bool interruptTriggered;
     //Read as: "High to Low Time", or "Low to High Time"
-    unsigned long highToLowTime; //Activation Time
-    unsigned long lowToHighTime; //Deactivation Time
+    volatile unsigned long highToLowTime; //Activation Time
+    volatile unsigned long lowToHighTime; //Deactivation Time
+    volatile unsigned long lastPulseTime;
 
   private:
     uint8_t checkBus(void);

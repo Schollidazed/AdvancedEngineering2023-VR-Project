@@ -28,6 +28,7 @@ public class BLEArduinoVR : MonoBehaviour
     IRSensor sensor0;
     //public IRSensor[] sensorList;
     public double MaxRate = 1000;
+    public double MaxThreshold = 100;
 
     //Must be to the power of 2.
     public volatile int[] ringBuffer = new int[256];
@@ -53,7 +54,7 @@ public class BLEArduinoVR : MonoBehaviour
         ringBufferLength = ringBuffer.Length;
         ringBufferModulusMask = ringBufferLength - 1;
 
-        sensor0 = new IRSensor(MaxRate);
+        sensor0 = new IRSensor(MaxRate, MaxThreshold);
 
         //for (int i = 0; i < NumberOfSensors; i++)
         //{
@@ -127,10 +128,16 @@ public class BLEArduinoVR : MonoBehaviour
         }
     }
 
+    private void OnDisable()
+    {
+        ble.Close();
+        readingThread.Abort();
+    }
+
     private void OnApplicationQuit()
     {
-        readingThread.Abort();
         ble.Close();
+        readingThread.Abort();
     }
 
     private void StartConHandler()

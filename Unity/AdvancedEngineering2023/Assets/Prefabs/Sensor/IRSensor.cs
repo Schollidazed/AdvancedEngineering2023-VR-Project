@@ -16,9 +16,9 @@ public class IRSensor
 
     //Assume that runtime detected that it belongs to this sensor.
 
-    public IRSensor(double MaxRate)
+    public IRSensor(double MaxRate, double MaxThreshold)
     {
-        limiter = new RateOfChangeLimiter(MaxRate);
+        limiter = new RateOfChangeLimiter(MaxRate, MaxThreshold);
     }
 
     public void updatePosition(UInt32 data)
@@ -73,15 +73,15 @@ public class IRSensor
 
         if (this.lighthouse == 0) 
         {
-            this.lighthouse0xy.x = (float) this.xAngleTmp; 
-            this.lighthouse0xy.y = (float) this.yAngleTmp;
+            this.lighthouse0xy.x = (float)limiter.limit(this.xAngleTmp);
+            this.lighthouse0xy.y = (float)limiter.limit(this.yAngleTmp);
             //Debug.Log("Lighthouse is 0"); 
             return;
         }
         else if (this.lighthouse == 1)
         { 
-            this.lighthouse1xy.x = (float)limiter.calculate(this.xAngleTmp);
-            this.lighthouse1xy.y = (float)limiter.calculate(this.yAngleTmp);
+            this.lighthouse1xy.x = (float)limiter.limit(this.xAngleTmp);
+            this.lighthouse1xy.y = (float)limiter.limit(this.yAngleTmp);
             //Debug.Log("Lighthouse is 1"); 
             return;
         }
