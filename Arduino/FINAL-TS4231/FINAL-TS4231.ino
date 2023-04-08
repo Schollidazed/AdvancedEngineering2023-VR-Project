@@ -21,7 +21,7 @@
 
 //The lengths of both Ring Buffers MUST be a power of two. The optimisation within both use a BITWISE AND instead of a Modulus.
 
-#define SCHEDULE_BUFFER_LENGTH          256
+#define SCHEDULE_BUFFER_LENGTH          128
 #define SCHEDULE_BUFFER_MODULUS_MASK    (SCHEDULE_BUFFER_LENGTH - 1)
 #define DATA_CIRC_BUFFER_LENGTH         64
 #define DATA_BUFFER_MODULUS_MASK        (DATA_CIRC_BUFFER_LENGTH - 1)
@@ -167,7 +167,7 @@ void setup(){
 //NOTE: The sweep time cannot be larger than 1/120th of a second (8333 microseconds), so discard those any bigger than that.
 void loop(){
     // unsigned int startLoop = micros();
-    Serial.println("______"); 
+    //DEBUG: Serial.println("______"); 
     //DEBUG: debug();
 
     //Read index will only increment if this is true;
@@ -304,6 +304,7 @@ void pollOOTX(){
             // 1) IF MASTER not defined, MASTER must be defined here
             if (!OOTX_MASTER.defined){
                 //DEBUG: Serial.println("M");
+                resetSensorRead();
                 if(!extractOOTXData(&OOTX_MASTER))
                     return;
                 cleanseSchedule();
@@ -361,6 +362,7 @@ bool extractOOTXData(OotxPulseInfo* OOTX){
     //if OOTX data < 0, is a sweep. and if it's a sweep, we want to reset everything.
     //The only place where a sweep is valid is where both are defined, so if one is not defined, clear them all.
     if(OOTXData < 0 || 7 < OOTXData){
+        //DEBUG: Serial.println("OOTX was either too small or too big, oops.");
         OOTX_MASTER.defined = false;
         OOTX_SLAVE.defined = false;
         return false;
@@ -396,27 +398,17 @@ void checkSweep(OotxPulseInfo* OOTX){
     totTime = sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - OOTX_MASTER.startTime;
     lighthouseID = OOTX == &OOTX_MASTER ? 0 : 1;
 
-    if(sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor]->PrevSweepTime[lighthouseID][OOTX->axis] == 0){
-        sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor]->PrevSweepTime[lighthouseID][OOTX->axis] = sweepTime;
-    }
-    int PrevSweepTime = sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor]->PrevSweepTime[lighthouseID][OOTX->axis];
-
-    Serial.print("Sensor: ");
-    Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor);
-    Serial.print("lighthouseID: ");
-    Serial.println(lighthouseID);
-    Serial.print("Axis: ");
-    Serial.println(OOTX->axis);
-
-    Serial.print("SweepTime: ");
-    Serial.println(sweepTime);
-    Serial.print("PrevSweepTime: ");
-    Serial.println(PrevSweepTime);
+    //DEBUG: Serial.print("SweepTime: ");
+    //DEBUG: Serial.println(sweepTime);
     //DEBUG: Serial.print("TotTime: ");
     //DEBUG: Serial.println(totTime);
-    Serial.println(abs(sweepTime - PrevSweepTime));
+    //DEBUG: Serial.print("Sensor: ");
+    //DEBUG: Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor);
+    //DEBUG: Serial.print("hasBeenRead? ");
+    //DEBUG: Serial.println(sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor]->hasBeenRead);
     
-    if(totTime < MIN_LIGHTHOUSE_SWEEPTIME){
+    if(totTime < MIN_LIGHTHOUSE_SWEEPTIME) {
+        //DEBUG: Serial.println("Went Under - Adjusting");
         OOTX_MASTER.startTime = OOTX_SLAVE.startTime;
         OOTX_MASTER.endTime = OOTX_SLAVE.endTime;
         OOTX_MASTER.axis = OOTX_SLAVE.axis;
@@ -425,9 +417,14 @@ void checkSweep(OotxPulseInfo* OOTX){
         extractOOTXData(&OOTX_SLAVE);
         cleanseSchedule();
 
-    } else if(MAX_LIGHTHOUSE_SWEEPTIME < totTime || MAX_LIGHTHOUSE_SWEEPTIME < sweepTime || abs(sweepTime - PrevSweepTime) > DELTA_THRESHOLD){
+    } else if(MAX_LIGHTHOUSE_SWEEPTIME < totTime) {
+        //DEBUG: Serial.println("Went Over - Resetting");
         OOTX_MASTER.defined = false;
         OOTX_SLAVE.defined = false;
+    } else if (sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor]->hasBeenRead) {
+        //DEBUG: Serial.println("Duplicate Scan... That wasn't supposed to happen.");
+        //TODO: FIGURE OUT WHY Lighthouse 1 Axis 1 always returns a dupe.
+        scheduleReadIndex++;
     } else {
         encodeData(OOTX);
     }
@@ -444,9 +441,8 @@ void encodeData(OotxPulseInfo* OOTX){
         (sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor << 26) 
         | (lighthouseID << 25) | (OOTX->axis << 24) | sweepTime;
     bufferWriteIndex++; bufferFillLength++;
-    sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor]->PrevSweepTime[lighthouseID][OOTX->axis] = sweepTime;
     scheduleReadIndex++;
-    
+    sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor]->hasBeenRead = true;
 }
 
 void sendData(){
@@ -503,4 +499,10 @@ int deltaTime_to_OOTXData(unsigned long dtime){
     double number = (ticks-LOWEST_TICK_COUNT)/TICK_COUNT_RANGE;
 
     return(number >= 0 ? number : -1);
+}
+
+void resetSensorRead(){
+    for(int i = 0; i < NUM_SENSORS; i++){
+        sensorList[i]->hasBeenRead = false;
+    }
 }

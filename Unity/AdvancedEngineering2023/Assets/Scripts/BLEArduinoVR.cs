@@ -25,9 +25,7 @@ public class BLEArduinoVR : MonoBehaviour
     IDictionary<string, string> discoveredDevices = new Dictionary<string, string>();
     volatile byte[] packageReceived = null;
 
-    IRSensor sensor0;
-    //public IRSensor[] sensorList;
-    public double MaxThreshold = 100;
+    public IRSensor[] sensorList;
 
     //Must be to the power of 2.
     public volatile int[] ringBuffer = new int[256];
@@ -46,21 +44,21 @@ public class BLEArduinoVR : MonoBehaviour
 
     public void startBLE()
     {
+        sensorList = new IRSensor[NumberOfSensors];
+        for (int i = 0; i < NumberOfSensors; i++)
+        {
+            sensorList[i] = new IRSensor();
+            Debug.Log("Sensor " + i + " Created.");
+        }
+
         readingThread = new Thread(ReadBleData);
         readingThread.Priority = System.Threading.ThreadPriority.AboveNormal;
 
         ble = new BLE();
         ringBufferLength = ringBuffer.Length;
         ringBufferModulusMask = ringBufferLength - 1;
-
-        sensor0 = new IRSensor();
-
-        //for (int i = 0; i < NumberOfSensors; i++)
-        //{
-        //    sensorList[i] = new IRSensor();
-        //}
-
-        print("here we go!");
+        
+        Debug.Log("here we go!");
     }
 
     // Update is called once per frame
@@ -90,22 +88,15 @@ public class BLEArduinoVR : MonoBehaviour
 
             //Consider using this to send data? https://www.ascii-code.com/
             UInt32 sensor = (UInt32)data >> 26;
+            Debug.Log("Sensor " + sensor);
 
-            //Debug.Log("Sensor " + sensor);
-            switch (sensor)
+            try
             {
-                case 0:
-                    try
-                    {
-                        sensor0.updatePosition((UInt32)data);
-                    }
-                    catch (Exception e)
-                    {
-                        Debug.Log("Could not Update Position: " + e.ToString());
-                    }
-                    break;
-                default:
-                    break;
+                sensorList[sensor].updatePosition((UInt32)data);
+            }
+            catch (Exception e)
+            {
+                Debug.Log("Could not Update Position: " + e.ToString());
             }
             bufferReadIndex++;
             bufferFillLength--;
@@ -120,11 +111,9 @@ public class BLEArduinoVR : MonoBehaviour
             switch (lighthouse)
             {
                 case 0:
-                    return sensor0.lighthouse0xy;
-                default:
-                    return new Vector2(0,0);
-                //case 1:
-                //    return sensorList[1].lighthouse1xy;
+                    return sensorList[sensor].lighthouse0xy;
+                case 1:
+                    return sensorList[sensor].lighthouse1xy;
             }
 
             throw new ArgumentOutOfRangeException("Sensor " + sensor + " is not valid");
@@ -252,7 +241,7 @@ public class BLEArduinoVR : MonoBehaviour
 
             int endIndex = buffer.IndexOf(";");
 
-            //Debug.Log("Buffer: " + buffer);
+            Debug.Log("Buffer: " + buffer);
             //Debug.Log("endIndex: " + endIndex);
 
             //Runs through message, parsing the ints, and shipping them to the ringBuffer.

@@ -16,6 +16,7 @@ public class IRSensor
 
     public IRSensor()
     {
+
     }
 
     public void updatePosition(UInt32 data)
