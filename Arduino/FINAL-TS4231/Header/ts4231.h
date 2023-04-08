@@ -45,6 +45,9 @@ class TS4231 {
     volatile unsigned long lowToHighTime; //Deactivation Time
     volatile unsigned long lastPulseTime;
 
+    //First controls the lighthouse, second controls the sweep axis.
+    volatile unsigned long PrevSweepTime[2][2];
+
   private:
     uint8_t checkBus(void);
     void ts_delayUs(unsigned int delay_val);  //delay in microseconds

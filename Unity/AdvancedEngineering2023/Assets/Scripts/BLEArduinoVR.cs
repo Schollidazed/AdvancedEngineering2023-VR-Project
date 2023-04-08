@@ -27,7 +27,6 @@ public class BLEArduinoVR : MonoBehaviour
 
     IRSensor sensor0;
     //public IRSensor[] sensorList;
-    public double MaxRate = 1000;
     public double MaxThreshold = 100;
 
     //Must be to the power of 2.
@@ -54,7 +53,7 @@ public class BLEArduinoVR : MonoBehaviour
         ringBufferLength = ringBuffer.Length;
         ringBufferModulusMask = ringBufferLength - 1;
 
-        sensor0 = new IRSensor(MaxRate, MaxThreshold);
+        sensor0 = new IRSensor();
 
         //for (int i = 0; i < NumberOfSensors; i++)
         //{
@@ -85,25 +84,33 @@ public class BLEArduinoVR : MonoBehaviour
         {
             //Debug.Log("Read Index: " + (bufferReadIndex & ringBufferModulusMask));
             //Debug.Log("Write Index" + (bufferWriteIndex & ringBufferModulusMask));
-            Debug.Log("Arduino Buffer Fill: " + bufferFillLength);
+            //Debug.Log("Arduino Buffer Fill: " + bufferFillLength)
 
             int data = ringBuffer[bufferReadIndex & ringBufferModulusMask];
 
             //Consider using this to send data? https://www.ascii-code.com/
             UInt32 sensor = (UInt32)data >> 26;
 
-            try
+            //Debug.Log("Sensor " + sensor);
+            switch (sensor)
             {
-                sensor0.updatePosition((UInt32)data);
-            }
-            catch (Exception e)
-            {
-                Debug.Log("Could not Update Position: " + e.ToString());
+                case 0:
+                    try
+                    {
+                        sensor0.updatePosition((UInt32)data);
+                    }
+                    catch (Exception e)
+                    {
+                        Debug.Log("Could not Update Position: " + e.ToString());
+                    }
+                    break;
+                default:
+                    break;
             }
             bufferReadIndex++;
             bufferFillLength--;
         }
-        //NOTE: Cavas size is variable. We need to either lock the size, or scale the values to it.
+        //NOTE: Canvas size is variable. We need to either lock the size, or scale the values to it.
     }
 
     public Vector2 getSensorData(int sensor, int lighthouse)
@@ -245,7 +252,7 @@ public class BLEArduinoVR : MonoBehaviour
 
             int endIndex = buffer.IndexOf(";");
 
-            Debug.Log("Buffer: " + buffer);
+            //Debug.Log("Buffer: " + buffer);
             //Debug.Log("endIndex: " + endIndex);
 
             //Runs through message, parsing the ints, and shipping them to the ringBuffer.
@@ -262,7 +269,7 @@ public class BLEArduinoVR : MonoBehaviour
                     }
                     else
                     {
-                        print("Parsed Int: " + ringBuffer[bufferWriteIndex & ringBufferModulusMask]);
+                        //print("Parsed Int: " + ringBuffer[bufferWriteIndex & ringBufferModulusMask]);
                         bufferWriteIndex++;
                         bufferFillLength++;
                     }
@@ -286,7 +293,7 @@ public class BLEArduinoVR : MonoBehaviour
                     }
                 }
             }
-            Thread.Sleep(10);
+            Thread.Sleep(1);
         }
     }
 

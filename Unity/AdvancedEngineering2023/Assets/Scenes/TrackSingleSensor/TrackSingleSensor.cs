@@ -33,19 +33,17 @@ public class TrackSingleSensor : MonoBehaviour
     }
 
     // Update is called once per frame
-    //Inputting data is handled by readingThread, Outputting data in applyThread
+    // Inputting data is handled by readingThread, Outputting data in applyThread
     void Update()
     {
         arduino.updateBLE();
 
-        Debug.Log("Data: " + arduino.getSensorData(0, 0).x + " / " + arduino.getSensorData(0, 0).y);
+        //Debug.Log("Data: " + arduino.getSensorData(0, 0).x + " / " + arduino.getSensorData(0, 0).y);
 
         sensor0rep.anchoredPosition = new Vector2(
-            (float)(arduino.getSensorData(0, 0).x * (lighthouse0Width / 172.2)),
-            (float)(arduino.getSensorData(0, 0).y * (lighthouse0Width / 172.2))
+            (float)(arduino.getSensorData(0, 0).x * (lighthouse0Width / 180.0)),
+            (float)(arduino.getSensorData(0, 0).y * (lighthouse0Width / 180.0))
         );
-
-
     }
 }
 

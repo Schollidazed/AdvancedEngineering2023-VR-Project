@@ -12,13 +12,10 @@ public class IRSensor
     public Vector2 lighthouse0xy;
     public Vector2 lighthouse1xy;
 
-    RateOfChangeLimiter limiter;
-
     //Assume that runtime detected that it belongs to this sensor.
 
-    public IRSensor(double MaxRate, double MaxThreshold)
+    public IRSensor()
     {
-        limiter = new RateOfChangeLimiter(MaxRate, MaxThreshold);
     }
 
     public void updatePosition(UInt32 data)
@@ -60,28 +57,28 @@ public class IRSensor
         if (this.sweepTime >= 8333){Debug.Log("Sweep Time Was Too High."); return;}
 
         //Check axis, and apply correct angle
-        //0 axis = y angle
-        //1 axis = x angle
-        if (axis == 0) { 
-            this.yAngleTmp = sweepTimeToDegrees(this.sweepTime);
+        //0 axis = x angle
+        //1 axis = y angle
+        if (axis == 0) {
+            this.xAngleTmp = sweepTimeToDegrees(this.sweepTime);
             //Debug.Log("X: " + xAngleTmp);
         }
         else { 
-            this.xAngleTmp = sweepTimeToDegrees(this.sweepTime);
+            this.yAngleTmp = sweepTimeToDegrees(this.sweepTime);
             //Debug.Log("Y: " + yAngleTmp);
         }
 
         if (this.lighthouse == 0) 
         {
-            this.lighthouse0xy.x = (float)limiter.limit(this.xAngleTmp);
-            this.lighthouse0xy.y = (float)limiter.limit(this.yAngleTmp);
+            this.lighthouse0xy.x = (float)(this.xAngleTmp);
+            this.lighthouse0xy.y = (float)(this.yAngleTmp);
             //Debug.Log("Lighthouse is 0"); 
             return;
         }
         else if (this.lighthouse == 1)
         { 
-            this.lighthouse1xy.x = (float)limiter.limit(this.xAngleTmp);
-            this.lighthouse1xy.y = (float)limiter.limit(this.yAngleTmp);
+            this.lighthouse1xy.x = (float)(this.xAngleTmp);
+            this.lighthouse1xy.y = (float)(this.yAngleTmp);
             //Debug.Log("Lighthouse is 1"); 
             return;
         }

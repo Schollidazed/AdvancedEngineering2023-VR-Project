@@ -3,21 +3,22 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class RateOfChangeLimiter : MonoBehaviour
+public class Limiter : MonoBehaviour
 {
-    private double _maxRate; // maximum rate of change allowed
+    //private double _maxRate; // maximum rate of change allowed
     private double _maxThreshold; //maximum change allowed.
     private double _prevValue; // previous value of the coordinate
     private DateTime _prevTime; // previous time when the value was updated
 
-    public RateOfChangeLimiter(double maxRate, double maxThreshold)
+    public Limiter(double maxThreshold)
     {
-        _maxRate = maxRate;
+        //_maxRate = maxRate;
         _maxThreshold = maxThreshold;
         _prevValue = 0;
         _prevTime = DateTime.Now;
     }
 
+    /*
     public double calculate(double newValue)
     {
         var now = DateTime.Now;
@@ -34,6 +35,7 @@ public class RateOfChangeLimiter : MonoBehaviour
 
         return limitedValue;
     }
+    */
 
     public double limit(double newValue)
     {
