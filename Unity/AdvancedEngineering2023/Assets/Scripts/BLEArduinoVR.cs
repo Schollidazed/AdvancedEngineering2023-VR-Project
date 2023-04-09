@@ -1,3 +1,4 @@
+using Palmmedia.ReportGenerator.Core.CodeAnalysis;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -26,24 +27,35 @@ public class BLEArduinoVR : MonoBehaviour
     volatile byte[] packageReceived = null;
 
     public IRSensor[] sensorList;
+    public bool InputVal;
 
     //Must be to the power of 2.
-    public volatile int[] ringBuffer = new int[256];
+    volatile int[] ringBuffer;
+    public int RING_BUFFER_LENGTH;
+    int RING_BUFFER_MODULUS_MASK;
 
-    public int ringBufferLength;
-    int ringBufferModulusMask;
-
-    volatile int bufferFillLength = 0;
+    public volatile int bufferFillLength = 0; //PUBLIC ONLY TO VIEW ON UNITY DASH
     volatile int bufferReadIndex = 0;
     volatile int bufferWriteIndex = 0;
+    public int bufferSkipThreshold = 64; //difference before it skips to the most recent write.
+
+    public static int DATA_LENGTH = 24; //bits long
+    public static int INPUT_RIGHTSHIFT = 23;
+    public static int SENSOR_RIGHTSHIFT = 18;
+    public static int SENSOR_MASK = 31; //Sensor takes up 5 bits. 
+    public static int LIGHTHOUSE_RIGHTSHIFT = 17;
+    public static int AXIS_RIGHTSHIFT = 16;
 
     public bool isScanning = false, isFinishedScanning = false, isConnecting = false, isReading = false;
 
     // BLE Threads 
-    Thread scanningThread, connectionThread, readingThread;
+    Thread connectionThread, readingThread, mainThread;
 
     public void startBLE()
     {
+        ringBuffer = new int[RING_BUFFER_LENGTH];
+        RING_BUFFER_MODULUS_MASK = RING_BUFFER_LENGTH - 1;
+
         sensorList = new IRSensor[NumberOfSensors];
         for (int i = 0; i < NumberOfSensors; i++)
         {
@@ -52,13 +64,15 @@ public class BLEArduinoVR : MonoBehaviour
         }
 
         readingThread = new Thread(ReadBleData);
-        readingThread.Priority = System.Threading.ThreadPriority.AboveNormal;
+        readingThread.Priority = System.Threading.ThreadPriority.Normal;
+        mainThread = new Thread(updateBLE);
+        mainThread.Priority = System.Threading.ThreadPriority.Highest;
 
         ble = new BLE();
-        ringBufferLength = ringBuffer.Length;
-        ringBufferModulusMask = ringBufferLength - 1;
+        
         
         Debug.Log("here we go!");
+        mainThread.Start();
     }
 
     // Update is called once per frame
@@ -73,23 +87,23 @@ public class BLEArduinoVR : MonoBehaviour
             if (isFinishedScanning && !isConnecting) StartConHandler();
 
         }
-        else if (!isReading)
+        else if (!isConnecting && !isReading)
         {
             readingThread.Start();
             isReading = true;
         }
-        else if (bufferReadIndex < bufferWriteIndex)
+        else if (isReading && bufferReadIndex < bufferWriteIndex)
         {
-            //Debug.Log("Read Index: " + (bufferReadIndex & ringBufferModulusMask));
-            //Debug.Log("Write Index" + (bufferWriteIndex & ringBufferModulusMask));
-            //Debug.Log("Arduino Buffer Fill: " + bufferFillLength)
+            //Debug.Log("Read Index: " + (bufferReadIndex & RING_BUFFER_MODULUS_MASK));
+            //Debug.Log("Write Index" + (bufferWriteIndex & RING_BUFFER_MODULUS_MASK));
+            //Debug.Log("Arduino Buffer Fill: " + bufferFillLength);
 
-            int data = ringBuffer[bufferReadIndex & ringBufferModulusMask];
+            int data = ringBuffer[bufferReadIndex & RING_BUFFER_MODULUS_MASK];
 
             //Consider using this to send data? https://www.ascii-code.com/
-            UInt32 sensor = (UInt32)data >> 26;
-            Debug.Log("Sensor " + sensor);
-
+            InputVal = (data >> INPUT_RIGHTSHIFT) == 1 ? true : false; //Can only be 0 or 1, so store as a bool :)
+            int sensor = (data >> SENSOR_RIGHTSHIFT) & SENSOR_MASK; //This gets rid of the input val.
+            //Debug.Log("Updating: Sensor " + sensor);
             try
             {
                 sensorList[sensor].updatePosition((UInt32)data);
@@ -104,8 +118,9 @@ public class BLEArduinoVR : MonoBehaviour
         //NOTE: Canvas size is variable. We need to either lock the size, or scale the values to it.
     }
 
-    public Vector2 getSensorData(int sensor, int lighthouse)
+    public double[] getSensorData(int sensor, int lighthouse)
     {
+        //Debug.Log("Called for sensor: " + sensor + " and Lighthouse: " + lighthouse);
         if (isReading) 
         {
             switch (lighthouse)
@@ -126,26 +141,24 @@ public class BLEArduinoVR : MonoBehaviour
 
     private void OnDisable()
     {
-        ble.Close();
-        readingThread.Abort();
+        killConnection();
     }
 
     private void OnApplicationQuit()
     {
-        ble.Close();
-        readingThread.Abort();
+        killConnection();
     }
 
     private void StartConHandler()
     {
+        isConnecting = true;
         connectionThread = new Thread(ConnectBleDevice);
         connectionThread.Start();
-        isConnecting = true;
     }
 
     private void ConnectBleDevice()
     {
-        while (deviceId != null)
+        while (!ble.isConnected)
         {
             try
             {
@@ -156,9 +169,9 @@ public class BLEArduinoVR : MonoBehaviour
                 Debug.Log("Could not establish connection to device with ID " + deviceId + "\n" + e);
             }
         }
-        if (ble.isConnected)
-            Debug.Log("Connected to: " + targetDeviceName);
-
+        Debug.Log("Connected to: " + targetDeviceName);
+        isConnecting = false;
+        connectionThread.Abort();
     }
 
     private void ScanBleDevices()
@@ -203,8 +216,6 @@ public class BLEArduinoVR : MonoBehaviour
             Thread.Sleep(500);
 
         scan.Cancel();
-
-        scanningThread = null;
         isScanning = false;
 
         if (deviceId == "-1")
@@ -224,49 +235,59 @@ public class BLEArduinoVR : MonoBehaviour
     private void ReadBleData()
     {
         //This will contain leftover bytes after analysis.
-        string buffer = "";
+
         while (isReading)
         {
+            if (bufferFillLength >= bufferSkipThreshold)
+            {
+                Debug.Log("OVERFLOW!!");
+                bufferReadIndex = bufferWriteIndex - 1;
+                bufferFillLength = 1;
+            }
+
             packageReceived = BLE.ReadBytes();
 
             byte[] toConcat = new byte[20];
+            bool latch = true;
             //Figure out a way to find when the transmission stops and the rando bits begin.
             //HM-10 Sends 20 Bytes before switching.
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; (i < 20) /*&& latch*/; i++)
             {
                 toConcat[i] = packageReceived[i];
                 //Debug.Log("Byte " + i + ": " + packageReceived[i]);
+                //if (toConcat[i] == 59) latch = false;
             }
-            buffer = String.Concat(buffer, Encoding.ASCII.GetString(toConcat));
+            //Debug.Log("HUAGGHHH: " + Encoding.ASCII.GetString(toConcat));
 
-            int endIndex = buffer.IndexOf(";");
+            string data = Encoding.ASCII.GetString(toConcat);
 
-            Debug.Log("Buffer: " + buffer);
+            int endIndex = data.IndexOf(";");
+
+            Debug.Log("DATA: " + data);
             //Debug.Log("endIndex: " + endIndex);
 
             //Runs through message, parsing the ints, and shipping them to the ringBuffer.
             //Don't write unless there is open space.
             while (endIndex >= 0)
             {
-                if (bufferFillLength < ringBufferLength)
+                if (bufferFillLength < RING_BUFFER_LENGTH)
                 {
-
-                    if (!int.TryParse(buffer.Substring(0, endIndex), out ringBuffer[bufferWriteIndex & ringBufferModulusMask]))
+                    if (!int.TryParse(data.Substring(0, endIndex), out ringBuffer[bufferWriteIndex & RING_BUFFER_MODULUS_MASK]))
                     {
-                        print("Could not Parse Int.");
-                        ringBuffer[bufferWriteIndex & ringBufferModulusMask] = ringBuffer[(bufferWriteIndex - 1) & ringBufferModulusMask];
+                        Debug.Log("Could not Parse Int.");
+                        ringBuffer[bufferWriteIndex & RING_BUFFER_MODULUS_MASK] = ringBuffer[(bufferWriteIndex - 1) & RING_BUFFER_MODULUS_MASK];
                     }
                     else
                     {
-                        //print("Parsed Int: " + ringBuffer[bufferWriteIndex & ringBufferModulusMask]);
+                        //Debug.Log("Parsed Int: " + ringBuffer[bufferWriteIndex & RING_BUFFER_MODULUS_MASK]);
                         bufferWriteIndex++;
                         bufferFillLength++;
                     }
                     try
                     {
-                        string newBuffer = buffer.Substring(endIndex + 1); //Does not do CR and LF
-                        buffer = newBuffer;
-                        endIndex = buffer.IndexOf(";");
+                        string newBuffer = data.Substring(endIndex + 1); //Does not do CR and LF
+                        data = newBuffer;
+                        endIndex = data.IndexOf(";");
 
                         //if (endIndex == -1) Debug.Log("End Index less than 0, attempting concatination.");
                     }
@@ -275,15 +296,19 @@ public class BLEArduinoVR : MonoBehaviour
                         if (e is ArgumentOutOfRangeException)
                         {
                             //Debug.Log("Caught Exception... End Index less than 0, attempting concatination.");
-                            buffer = "";
-                            endIndex = buffer.IndexOf(";");
+                            data = "";
+                            endIndex = data.IndexOf(";");
                         }
                         else Debug.Log("Huh... this is odd.");
                     }
-                }
+                   }
             }
-            Thread.Sleep(1);
         }
     }
-
+    public void killConnection()
+    {
+        Debug.Log("Boom. BLE Dead.");
+        ble.Close();
+        readingThread.Abort();
+    }
 }

@@ -16,36 +16,31 @@
 #define MICROS_ADJUSTMENT               3.0                             //In uS
 #define MIN_LIGHTHOUSE_SWEEPTIME        550                             //In uS (415 [TIME FROM MASTER BEGINNING TO SLAVE BEGINNING] + 135 [MAX OOTX SIGNAL]) 
 #define MAX_LIGHTHOUSE_SWEEPTIME        8300                            //In uS (Meant to be 8333, but is slightly lower to prevent wacky hyjinks)
-#define MAX_TIME_BTWN_OOTX              4.0                             //In uS
-#define DELTA_THRESHOLD                 1000/MICROSECONDS_TO_TICKS       //In uS
+#define MAX_TIME_BTWN_OOTX              20.0                            //In uS
+
+//Be sure to allocate 14 bits for the sweeptime!!
+#define DATA_LENGTH                     24                              //This is just for reference...
+#define INPUT_LEFTSHIFT                 23                              //This is only meant for 1 button input.
+#define SENSOR_LEFTSHIFT                18                              //With 1 input bit, this leaves 32 total sensors.
+#define LIGHTHOUSE_LEFTSHIFT            17
+#define AXIS_LEFTSHIFT                  16
 
 //The lengths of both Ring Buffers MUST be a power of two. The optimisation within both use a BITWISE AND instead of a Modulus.
-
-#define SCHEDULE_BUFFER_LENGTH          128
+//1, 2, 4, 16, 32, 64, 128, 256, 512, 1024, 2048
+#define SCHEDULE_BUFFER_LENGTH          64
 #define SCHEDULE_BUFFER_MODULUS_MASK    (SCHEDULE_BUFFER_LENGTH - 1)
-#define DATA_CIRC_BUFFER_LENGTH         64
-#define DATA_BUFFER_MODULUS_MASK        (DATA_CIRC_BUFFER_LENGTH - 1)
 
 ///////////////////////////////////////////
 ///                                     ///
-///             *SENSORS*               ///
+///        *SENSORS AND INPUT*          ///
 ///                                     ///
 ///////////////////////////////////////////
 
     //E pin then D pin.
     int EDPins[][2] = {{53, 51}, {52, 50} /*,{}, {}, {}, {}, {}*/};
-    //When pin drops low, that's the start of an IR signal.
-    TS4231 sensor0(EDPins[0][0], EDPins[0][1]);
-    TS4231 sensor1(EDPins[1][0], EDPins[1][1]);
-    //TS4231 sensor2(EDPins[2][0], EDPins[2][1]);
-    //TS4231 sensor3(EDPins[3][0], EDPins[3][1]);
-    //TS4231 sensor4(EDPins[4][0], EDPins[4][1]);
-    //TS4231 sensor5(EDPins[5][0], EDPins[5][1]);
-    //TS4231 sensor6(EDPins[6][0], EDPins[6][1]);
+    //NOTE: When pin drops low, that's the start of an IR signal.
 
-    //Stores all the memory addresses of each sensor
-    //Be sure to dereference when calling! Use the "->" operator. 
-    TS4231* sensorList[] = {&sensor0, &sensor1/*, &sensor2, &sensor3, &sensor4, &sensor5, &sensor6*/};
+    TS4231 sensorList[NUM_SENSORS];
 
     //Includes the Sensor, the highToLow time, the lowToHigh time, and the last pulse time.
     class SensorPackage {
@@ -64,10 +59,15 @@
         }
     };
 
-    //Ring Buffer! Like the Circular Buffer below :)
+    //Ring Buffer!
     SensorPackage sensorSchedule[SCHEDULE_BUFFER_LENGTH];
     volatile int scheduleWriteIndex = 0;
     volatile int scheduleReadIndex = 0;
+
+    //Connect to a switch that's normally low. Goes high once activated.
+    //Set to -1 if you don't want it on.
+    int inputPin = -1;
+    bool inputVal = false;
 
 ///////////////////////////////////////////
 ///                                     ///
@@ -105,44 +105,55 @@
     int sweepTime;
     int totTime;
     bool lighthouseID;
+    //The only time this is a previous sweep time is in checkSweep().
+    //Sensor, Lighthouse, Axis
+    int prevSweepTimeList[NUM_SENSORS][2][2];
 
 ///////////////////////////////////////////
 ///                                     ///
-///      *Circular DATA Buffer*         ///
+///          Data Structure             ///
 ///                                     ///
 ///////////////////////////////////////////
 
-    //Unsigned int = 32 bit number 
-    //First 6 bits -> Sensor 
-    //Next bit -> Lighthouse (0 = master, 1 = slave)
-    //Next bit -> Axis (0 = X, 1 = Y)
-    //Rest of 24 = dtime from sweep. (This should be no more than 8333 microseconds)
+    //Fist bit = input (switch or a button)
+    //Next 5 bits -> Sensor. Offset from Least Significant bit by SENSOR_LEFTSHIFT
+    //Next bit -> Lighthouse (0 = master, 1 = slave). Offset from Least Significant bit by LUGHTHOUSE_LEFTSHIFT
+    //Next bit -> Axis (0 = X, 1 = Y). Offset from Least Significant bit by AXIS_LEFTSHIFT
+    //Rest of them = dtime from sweep. (This should be no more than 8333 microseconds)
     //if a value == 0, then no data is there.
-    volatile unsigned int dataCircularBuffer[DATA_CIRC_BUFFER_LENGTH];
-    volatile int bufferFillLength = 0;
-    volatile int bufferWriteIndex = 0;
-    volatile int bufferReadIndex = 0;
+    unsigned int data;
+
+///////////////////////////////////////////
+///                                     ///
+///        *THE ACTUAL CODE LOL*        ///
+///                                     ///
+///////////////////////////////////////////
 
 void setup(){
     while(!SerialTX){}
 
-    SerialTX.begin(9600);
+    SerialTX.begin(115200);
     Serial.begin(115200);
 
     //Serial.println("Hello, please wait...");
 
-    delay(500);
-    SerialTX.println("AT");
-    delay(500);
-    SerialTX.println("AT+NAMEADV-ENG2023"); 
-    delay(500);
-    //0 = Slave, 1 = Master
-    SerialTX.println("AT+ROLE0");
-    // 0: 9600, 1: 19200, 2: 38400, 3: 57600, 4: 115200, 5: 4800, 6: 2400, 7: 1200, 8: 230400
-    SerialTX.println("AT+BAUD0");
+    //HM-10 only communicates AT commands when NL-CR are off.
+    // delay(500);
+    // SerialTX.println("AT");
+    // delay(500);
+    // SerialTX.println("AT+NAMEADV-ENG2023"); 
+    // delay(500);
+    // //0 = Slave, 1 = Master
+    // SerialTX.println("AT+ROLE0");
+    // // 0: 9600, 1: 19200, 2: 38400, 3: 57600, 4: 115200, 5: 4800, 6: 2400, 7: 1200, 8: 230400
+    // SerialTX.println("AT+BAUD0");
     // SerialTX.end();
     // SerialTX.begin(115200);
     
+    for(int i = 0; i < NUM_SENSORS; i++){
+        sensorList[i].setPins(EDPins[i][0], EDPins[i][1]);
+    }
+
     //Fills up the schedule with blank schedules.
     for(int i = 0; i < SCHEDULE_BUFFER_LENGTH; i++){
         sensorSchedule[i] = SensorPackage();
@@ -159,6 +170,7 @@ void setup(){
     delay(1000);
 
     TS4231_attachIntterupts();
+    if(inputPin != -1) attachInterrupt(digitalPinToInterrupt(inputPin), ISR_input, CHANGE);
 }
 
 //One cycle of an entire Master/Slave loop should be about 30Hz, or a period of 0.033s
@@ -166,26 +178,26 @@ void setup(){
 //Cycle is always: Master, Slave, Sweep. (Repeat)
 //NOTE: The sweep time cannot be larger than 1/120th of a second (8333 microseconds), so discard those any bigger than that.
 void loop(){
-    // unsigned int startLoop = micros();
-    //DEBUG: Serial.println("______"); 
-    //DEBUG: debug();
+    unsigned int startLoop = micros();
+    Serial.println("______"); 
 
-    //Read index will only increment if this is true;
-    if (sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor >= 0){
+    //The current issue is that the ISRs don't place the sensors properly inside of the buffer.
+
+    //If a sensor has been placed in the schedule, it's done submitting. if it's >= 0, then it's able to be read.
+    if (sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor >= 0 
+    && sensorSchedule[(scheduleReadIndex+1) & SCHEDULE_BUFFER_MODULUS_MASK].sensor >= 0){
         pollOOTX();
     }
-    //Now defined, we send a byte of data over SerialTX.
-    sendData();
 
-    //Serial.print("DELTA: ");
-    //Serial.println(micros() - startLoop);
+    Serial.print("DELTA: ");
+    Serial.println(micros() - startLoop);
 }   
 
 void debug(){
     Serial.print("R: ");
-    Serial.println(scheduleReadIndex);
+    Serial.println(scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK);
     Serial.print("W: ");
-    Serial.println(scheduleWriteIndex);
+    Serial.println(scheduleWriteIndex & SCHEDULE_BUFFER_MODULUS_MASK);
 
     Serial.print("S: ");
     Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor);
@@ -211,12 +223,12 @@ void TS4231_configSensors(){
         bool isSuccess = false;
 
         while (!isSuccess){
-            if (sensorList[i]->waitForLight(TS4231_LIGHT_TIMEOUT)) {
+            if (sensorList[i].waitForLight(TS4231_LIGHT_TIMEOUT)) {
                 //Execute this code when light is detected
                 Serial.print("Sensor ");
                 Serial.print(i);
                 Serial.println(" Light DETECTED");
-                config_result = sensorList[i]->configDevice();
+                config_result = sensorList[i].configDevice();
                 //user can determine how to handle each return value for the configuration function
                 switch (config_result) {
                     case CONFIG_PASS:
@@ -251,90 +263,94 @@ void TS4231_attachIntterupts(){
 }
 
 //ISRs can't take parameters or serial communications :(
+//This would be so much easier if they could. 
 void ISR_sensor0(){
     unsigned int time = micros();
     //If it is low, sets the highToLowTime to now. and the last pulse time to highToLowTime
     //If it is high, sets the lowToHighTime to now.
-    if (!digitalRead(sensor0.E_pin)){
-        sensor0.lastPulseTime = sensor0.highToLowTime;
-        sensor0.highToLowTime = time;
+    if (!digitalRead(sensorList[0].E_pin)){
+        scheduleWriteIndex++;
+        sensorList[0].writeIndex = scheduleWriteIndex;
+        sensorSchedule[sensorList[0].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor = -1;
+        sensorList[0].lastPulseTime = sensorList[0].highToLowTime;
+        sensorList[0].highToLowTime = time;
     }
     else{
-        sensorSchedule[scheduleWriteIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor = 0;
-        sensorSchedule[scheduleWriteIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime = sensor0.highToLowTime;
-        sensorSchedule[scheduleWriteIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime = time;
-        sensorSchedule[scheduleWriteIndex & SCHEDULE_BUFFER_MODULUS_MASK].lastPulseTime = sensor0.lastPulseTime;
-        scheduleWriteIndex++;
+        sensorSchedule[sensorList[0].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor = 0;
+        sensorSchedule[sensorList[0].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime = sensorList[0].highToLowTime;
+        sensorSchedule[sensorList[0].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime = time;
+        sensorSchedule[sensorList[0].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].lastPulseTime = sensorList[0].lastPulseTime;
     }
 }
 void ISR_sensor1(){
     unsigned int time = micros();
-    if (!digitalRead(sensor1.E_pin)){
-        sensor1.lastPulseTime = sensor1.highToLowTime;
-        sensor1.highToLowTime = time;
+    if (!digitalRead(sensorList[1].E_pin)){
+        scheduleWriteIndex++;
+        sensorList[1].writeIndex = scheduleWriteIndex;
+        sensorSchedule[sensorList[1].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor = -1;
+        sensorList[1].lastPulseTime = sensorList[1].highToLowTime;
+        sensorList[1].highToLowTime = time;
     }
     else{
-        sensorSchedule[scheduleWriteIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor = 1;
-        sensorSchedule[scheduleWriteIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime = sensor1.highToLowTime;
-        sensorSchedule[scheduleWriteIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime = time;
-        sensorSchedule[scheduleWriteIndex & SCHEDULE_BUFFER_MODULUS_MASK].lastPulseTime = sensor1.lastPulseTime;
-        scheduleWriteIndex++;
+        sensorSchedule[sensorList[1].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor = 1;
+        sensorSchedule[sensorList[1].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime = sensorList[1].highToLowTime;
+        sensorSchedule[sensorList[1].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime = time;
+        sensorSchedule[sensorList[1].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].lastPulseTime = sensorList[1].lastPulseTime;
     }
 }
+void ISR_input(){
+    inputVal = digitalRead(inputPin);
+}
 
-//Sensor has Triggered Interrupt. Check if a change HAS occured. 
-//Check through every sensor, and find which one triggered the intterupt
-//Will automatically pop_back the sensor if its read or not.
-//PRE-REQUISITE: sensor >= 0
+//This is the main polling that the arduino uses to check for OOTX and Sweep signals.
+//A sensor that has been triggered will send its complete data to the Sensor Schedule.
+//This reads the most recent sensor reading, and interprets it.
 void pollOOTX(){
     //DEBUG: Serial.print("INDEX DIFF: ");
     //DEBUG: Serial.println((scheduleWriteIndex & SCHEDULE_BUFFER_MODULUS_MASK) - (scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK));
+    //If HighToLowTime is more recent, check the dtime
+    if(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime < sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime
+    && (sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lastPulseTime) > MAX_LIGHTHOUSE_SWEEPTIME){   
+            OOTX_MASTER.defined = false; 
+            OOTX_SLAVE.defined = false;
+    }
 
-    //Buffer length must not be full. If it is, then it should send data instead.
-    if(bufferFillLength <= DATA_CIRC_BUFFER_LENGTH){
-        //If HighToLowTime is more recent, check the dtime
-        if(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime < sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime
-        && (sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lastPulseTime) > MAX_LIGHTHOUSE_SWEEPTIME){   
-                OOTX_MASTER.defined = false; 
+    //lowToHighTime MUST be more recent to do anything useful
+    else if (sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime > sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime){
+        // 1) IF MASTER not defined, MASTER must be defined here
+        if (!OOTX_MASTER.defined){
+            //DEBUG: Serial.println("M");
+            resetSensorRead();
+            if(!extractOOTXData(&OOTX_MASTER))
+                return;
+            cleanseSchedule();
+        }
+        // 2) IF SLAVE not defined, SLAVE must be defined here
+        if (!OOTX_SLAVE.defined){
+            //DEBUG: Serial.println("S");
+            if(!extractOOTXData(&OOTX_SLAVE))
+                return;
+            cleanseSchedule();
+        }
+        // 3) IF Both SLAVE and MASTER are defined, it must be a sweep.
+        if (OOTX_MASTER.defined && OOTX_SLAVE.defined){
+           //DEBUG: Serial.print("B");
+            //IF both are skip, then try again lol.
+            if(OOTX_MASTER.skip && OOTX_SLAVE.skip){
+                //DEBUG: Serial.println("N");
+                OOTX_MASTER.defined = false;
                 OOTX_SLAVE.defined = false;
-        }
-
-        //lowToHighTime MUST be more recent to do anything useful
-        else if (sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime > sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime){
-            // 1) IF MASTER not defined, MASTER must be defined here
-            if (!OOTX_MASTER.defined){
+            }
+            else if(!OOTX_MASTER.skip){
                 //DEBUG: Serial.println("M");
-                resetSensorRead();
-                if(!extractOOTXData(&OOTX_MASTER))
-                    return;
-                cleanseSchedule();
+                if(checkSweep(&OOTX_MASTER)) encodeAndSendData(&OOTX_MASTER);
             }
-            // 2) IF SLAVE not defined, SLAVE must be defined here
-            if (!OOTX_SLAVE.defined){
-               //DEBUG: Serial.println("S");
-                if(!extractOOTXData(&OOTX_SLAVE))
-                    return;
-                cleanseSchedule();
+            else if(!OOTX_SLAVE.skip){
+                //DEBUG: Serial.println("S");
+                if(checkSweep(&OOTX_SLAVE)) encodeAndSendData(&OOTX_SLAVE);
             }
-            // 3) IF Both SLAVE and MASTER are defined, it must be a sweep.
-            if (OOTX_MASTER.defined && OOTX_SLAVE.defined){
-                //DEBUG: Serial.print("B");
-                //IF both are skip, then try again lol.
-                if(OOTX_MASTER.skip && OOTX_SLAVE.skip){
-                    OOTX_MASTER.defined = false;
-                    OOTX_SLAVE.defined = false;
-                }
-                else if(!OOTX_MASTER.skip){
-                    //DEBUG: Serial.println("M");
-                    checkSweep(&OOTX_MASTER);
-                }
-                else if(!OOTX_SLAVE.skip){
-                    //DEBUG: Serial.println("S");
-                    checkSweep(&OOTX_SLAVE);
-                }
-            }
-            // 4) Needs to keep checking for sweeps until time is up. 
         }
+        // 4) Needs to keep checking for sweeps until time is up. 
     }
 }
 
@@ -349,7 +365,14 @@ bool extractOOTXData(OotxPulseInfo* OOTX){
     OOTX->startTime = sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime;
     OOTX->endTime = sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime; 
     int OOTXData = deltaTime_to_OOTXData(OOTX->endTime - OOTX->startTime);
-    
+
+    //DEBUG: Serial.print("ActTime: ");
+    //DEBUG: Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime);
+    //DEBUG: Serial.print("DActTime: ");
+    //DEBUG: Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime);
+    //DEBUG: Serial.print("PSActTime: ");
+    //DEBUG: Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lastPulseTime);
+    //DEBUG: 
     //DEBUG: Serial.print("Sensor: ");
     //DEBUG: Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor);
     //DEBUG: Serial.print("dTime:  ");
@@ -360,7 +383,7 @@ bool extractOOTXData(OotxPulseInfo* OOTX){
     scheduleReadIndex++;
 
     //if OOTX data < 0, is a sweep. and if it's a sweep, we want to reset everything.
-    //The only place where a sweep is valid is where both are defined, so if one is not defined, clear them all.
+    //The only place where a sweep is valid is where both are defined, so if one is not defined, clear them all and try again.
     if(OOTXData < 0 || 7 < OOTXData){
         //DEBUG: Serial.println("OOTX was either too small or too big, oops.");
         OOTX_MASTER.defined = false;
@@ -375,8 +398,9 @@ bool extractOOTXData(OotxPulseInfo* OOTX){
     return true;
 }
 
-//A cleansing sample is created. If the activation time is similar to that in the sample, the read index is incremented past.
-//The read index is incremented once before incrementing more.
+//This gets rid of similar, potentially duplicate sensor readings on the schedule.
+//A cleansing sample is created. If the difference between activation times of the sample and current reading is under MAX_TIME_BTWN_OOTX... 
+//the read index is incremented past.
 void cleanseSchedule(){
     long sample = sensorSchedule[(scheduleReadIndex-1) & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime;
     while(abs(sensorSchedule[(scheduleReadIndex) & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - sample) <= MAX_TIME_BTWN_OOTX){
@@ -385,15 +409,17 @@ void cleanseSchedule(){
     }
 }
 
-//If the sweep time is less than the min time, move it forward, we accidentally read a sweep for a master.
+//Validates whether the current pulse is actually a sweep or not, returning a boolean.
+//If the total time is less than the min time, adjust the OOTX, we accidentally declared a sweep a master OOTX.
 //If the sweep time is more than the max time, remove the OOTX info.
-//If the sweep time is in-between, then use it!
-void checkSweep(OotxPulseInfo* OOTX){
+//If the sensor has already been ready, then skip past it! We don't want any dupes...
+//If the sweep time is in-between the min and max, and the sensor that sent it has not been read, then read it!
+bool checkSweep(OotxPulseInfo* OOTX){
     //DEBUG: Serial.println(OOTX->startTime);
     //DEBUG: Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime);
     //DEBUG: Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime);
     //DEBUG: Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime - sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime);
-
+    
     sweepTime = sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - OOTX->startTime;
     totTime = sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - OOTX_MASTER.startTime;
     lighthouseID = OOTX == &OOTX_MASTER ? 0 : 1;
@@ -405,76 +431,139 @@ void checkSweep(OotxPulseInfo* OOTX){
     //DEBUG: Serial.print("Sensor: ");
     //DEBUG: Serial.println(sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor);
     //DEBUG: Serial.print("hasBeenRead? ");
-    //DEBUG: Serial.println(sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor]->hasBeenRead);
+    //DEBUG: Serial.println(sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor].hasBeenRead);
     
     if(totTime < MIN_LIGHTHOUSE_SWEEPTIME) {
         //DEBUG: Serial.println("Went Under - Adjusting");
-        OOTX_MASTER.startTime = OOTX_SLAVE.startTime;
-        OOTX_MASTER.endTime = OOTX_SLAVE.endTime;
-        OOTX_MASTER.axis = OOTX_SLAVE.axis;
-        OOTX_MASTER.skip = OOTX_SLAVE.skip;
 
-        extractOOTXData(&OOTX_SLAVE);
-        cleanseSchedule();
+        //this should be impossible. correct it by swapping them lol.
+        if(totTime < sweepTime){
+            OotxPulseInfo tempOOTX;
+            tempOOTX.startTime = OOTX_MASTER.startTime;
+            tempOOTX.endTime = OOTX_MASTER.endTime;
+            tempOOTX.axis = OOTX_MASTER.axis;
+            tempOOTX.skip = OOTX_MASTER.skip;
+
+            OOTX_MASTER.startTime = OOTX_SLAVE.startTime;
+            OOTX_MASTER.endTime = OOTX_SLAVE.endTime;
+            OOTX_MASTER.axis = OOTX_SLAVE.axis;
+            OOTX_MASTER.skip = OOTX_SLAVE.skip;
+
+            OOTX_SLAVE.startTime = OOTX_MASTER.startTime;
+            OOTX_SLAVE.endTime = OOTX_MASTER.endTime;
+            OOTX_SLAVE.axis = OOTX_MASTER.axis;
+            OOTX_SLAVE.skip = OOTX_MASTER.skip;
+
+            scheduleReadIndex++;
+            cleanseSchedule();
+        }
+        else{
+            OOTX_MASTER.startTime = OOTX_SLAVE.startTime;
+            OOTX_MASTER.endTime = OOTX_SLAVE.endTime;
+            OOTX_MASTER.axis = OOTX_SLAVE.axis;
+            OOTX_MASTER.skip = OOTX_SLAVE.skip;
+
+            extractOOTXData(&OOTX_SLAVE);
+            cleanseSchedule();
+        }
+        return false;
 
     } else if(MAX_LIGHTHOUSE_SWEEPTIME < totTime) {
         //DEBUG: Serial.println("Went Over - Resetting");
+        if(totTime < 8400){ //8400 is arbitary. it's the cut off before we deem the system a failure.
+            sweepTime = 0x4000;
+            //If a sensor has not been swept, send an intentionally large value.
+            for(int i = 0; i < NUM_SENSORS; i++){
+                if(!sensorList[i].hasBeenRead) encodeAndSendData(OOTX, i);
+            }
+        }
         OOTX_MASTER.defined = false;
         OOTX_SLAVE.defined = false;
-    } else if (sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor]->hasBeenRead) {
-        //DEBUG: Serial.println("Duplicate Scan... That wasn't supposed to happen.");
+        return false;
+    } else if (sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor].hasBeenRead) {
+        //DEBUG: Serial.println("Duplicate Scan");
         //TODO: FIGURE OUT WHY Lighthouse 1 Axis 1 always returns a dupe.
         scheduleReadIndex++;
-    } else {
-        encodeData(OOTX);
+        return false;
     }
+
+    // int tempScheduleReadIndex = scheduleReadIndex + 1;
+
+    //An attempt to average duplicate sweeps.
+    // while(sensorSchedule[tempScheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - OOTX_MASTER.startTime < MAX_LIGHTHOUSE_SWEEPTIME){
+    //     if(sensorSchedule[tempScheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor == sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor)
+    //         sweepTime += sensorSchedule[tempScheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - OOTX->startTime;
+    //         //sweepTime = sensorSchedule[tempScheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - OOTX->startTime;
+    //     tempScheduleReadIndex++;
+    // }
+    // sweepTime /= tempScheduleReadIndex-scheduleReadIndex;
+
+    
+    //An attempt to use the previous sweep time to determine the current one.
+    // int tempSweepTime;
+    // int prevSweepTime = prevSweepTimeList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor][lighthouseID][OOTX->axis];
+    // while(sensorSchedule[tempScheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - OOTX_MASTER.startTime < MAX_LIGHTHOUSE_SWEEPTIME){
+    //     if(sensorSchedule[tempScheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor == sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor)
+    //         tempSweepTime = sensorSchedule[tempScheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - OOTX->startTime;
+    //         //sweepTime = sensorSchedule[tempScheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime - OOTX->startTime;
+    //     tempScheduleReadIndex++;
+    // }
+    // sweepTime = ( abs(sweepTime-prevSweepTime) < abs(tempSweepTime-prevSweepTime) ) ? sweepTime : tempSweepTime;
+
+    // prevSweepTimeList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor][lighthouseID][OOTX->axis] = sweepTime;
+
+    return true;
 }
 
 //Takes the sweep time, the duration from the start of the sweep to the flash and encodes it into data.
 //Also cludes the lighthouseID, the axis that was swept, and the sensor that detected the sweep.
-//That data is sent to the circular buffer, to be sent over SerialTX
-//Only proceed if the sweep time difference does not exceed that of the threshold.
-//BufferWriteIndex++ bufferFillLength++ and scheduleReadIndex++
+//That data is sent over SerialTX
+//scheduleReadIndex++
 //PRECONDITIONS: Sweeptime must be defined.
-void encodeData(OotxPulseInfo* OOTX){
-    dataCircularBuffer[bufferWriteIndex & DATA_BUFFER_MODULUS_MASK] = 
-        (sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor << 26) 
-        | (lighthouseID << 25) | (OOTX->axis << 24) | sweepTime;
-    bufferWriteIndex++; bufferFillLength++;
-    scheduleReadIndex++;
-    sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor]->hasBeenRead = true;
+void encodeAndSendData(OotxPulseInfo* OOTX){
+    data = (inputVal << INPUT_LEFTSHIFT) 
+        | (sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor << SENSOR_LEFTSHIFT) 
+        | (lighthouseID << LIGHTHOUSE_LEFTSHIFT) | (OOTX->axis << AXIS_LEFTSHIFT) | sweepTime;
+        
+    SerialTX.print(data);
+    SerialTX.print(';');
+    Serial.print(data);
+    Serial.println(';');
+
+    debugData();
+
+    sensorList[sensorSchedule[scheduleReadIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor].hasBeenRead = true;
+    scheduleReadIndex++;   
 }
-
-void sendData(){
-    //Modulo operator, so that we can loop through everything.
-    unsigned int data = dataCircularBuffer[bufferReadIndex & DATA_BUFFER_MODULUS_MASK];
-    //If the current data == 0 (Should only happen at beginning), or read has reached write
-    if((data == 0) || (bufferReadIndex >= bufferWriteIndex)){
-        return;
-    }
-
-    //Send data over chosen Serial port
+//Alternate version of the original. Focuses solely on the OOTX and the Sensor.
+//No iteration here,
+void encodeAndSendData(OotxPulseInfo* OOTX, int sensor){
+    data = (inputVal << INPUT_LEFTSHIFT) | (sensor << SENSOR_LEFTSHIFT) | (lighthouseID << LIGHTHOUSE_LEFTSHIFT) 
+        | (OOTX->axis << AXIS_LEFTSHIFT) | sweepTime;
+        
     SerialTX.print(data);
     SerialTX.print(';');
 
-    bufferReadIndex++;
-    bufferFillLength--;
-    
-    //Example Breakdown:
+    debugData();
+
+    sensorList[sensor].hasBeenRead = true;   
+}
+
+void debugData(){
     int sensor = 0;
     int lighthouse = 0;
     int axis = 0;
     int sweep = 0;
     //Start from most significant bit, and go down. i controls the bitshift
-    for (int i = 31; i >= 0; i--) {
+    for (int i = DATA_LENGTH; i >= 0; i--) {
         int bit = (data >> i) & 1;
         //SerialTX.print(bit);
-        if(i >= 26){
+        if(i >= SENSOR_LEFTSHIFT){
             sensor <<= 1;
             sensor |= bit;
-        } else if(i == 25){
+        } else if(i == LIGHTHOUSE_LEFTSHIFT){
             lighthouse |= bit;
-        } else if(i == 24){
+        } else if(i == AXIS_LEFTSHIFT){
             axis |= bit;
         } else{
             sweep <<= 1;
@@ -503,6 +592,6 @@ int deltaTime_to_OOTXData(unsigned long dtime){
 
 void resetSensorRead(){
     for(int i = 0; i < NUM_SENSORS; i++){
-        sensorList[i]->hasBeenRead = false;
+        sensorList[i].hasBeenRead = false;
     }
 }

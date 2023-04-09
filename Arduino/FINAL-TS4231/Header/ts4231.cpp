@@ -25,6 +25,14 @@
 //    output pin signal changes to meet the TS4231 timing parameters as stated
 //    in the datasheet.  See the ts_digitalWrite() function for more information.
 
+TS4231::TS4231() {
+  configured = false;
+  E_pin = 0;
+  D_pin = 1;
+
+  isLow = false;
+  }
+
 TS4231::TS4231(int device_E_pin, int device_D_pin) {
   configured = false;
   E_pin = device_E_pin;
@@ -32,9 +40,15 @@ TS4231::TS4231(int device_E_pin, int device_D_pin) {
   ts_pinMode(E_pin, INPUT);
   ts_pinMode(D_pin, INPUT);
 
-  interruptTriggered = false;
   isLow = false;
   }
+
+void TS4231::setPins(int device_E_pin, int device_D_pin){
+  E_pin = device_E_pin;
+  D_pin = device_D_pin;
+  ts_pinMode(E_pin, INPUT);
+  ts_pinMode(D_pin, INPUT);
+}
 
 void TS4231::ts_delayUs(unsigned int delay_val) {
   delayMicroseconds(delay_val);
