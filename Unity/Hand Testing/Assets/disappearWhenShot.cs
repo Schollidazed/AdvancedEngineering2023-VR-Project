@@ -2,11 +2,24 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+
 public class disappearWhenShot : MonoBehaviour
 {
-    public GameObject target;
+    public GameObject UI;
+
+    public bool hasBeenShot;
+    public bool read;
+
     // Start is called before the first frame update
-    void Start(){}
+    void Start()
+    {
+
+    }
+
+    void Update()
+    {
+
+    }
 
     // Update is called once per frame
     void OnCollisionEnter(Collision col)
@@ -15,8 +28,13 @@ public class disappearWhenShot : MonoBehaviour
         if (col.gameObject.name == ("Bullet(Clone)"))
         {
             Debug.Log("DESTROY");
-            Destroy(target);
             Destroy(col.gameObject);
+            hasBeenShot = true;
         }
+    }
+
+    public bool isShot()
+    {
+        return hasBeenShot;
     }
 }

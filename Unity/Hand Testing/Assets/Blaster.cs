@@ -15,8 +15,6 @@ public class Blaster : MonoBehaviour
 
 
     public InputActionProperty blasterActivate;
-
-    private float timeElapsed = 0.0F;
     private bool hasFired = false;
 
     //private Vector3 position;
