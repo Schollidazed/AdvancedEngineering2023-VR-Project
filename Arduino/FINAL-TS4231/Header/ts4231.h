@@ -28,23 +28,29 @@
 class TS4231 {
 
   public:
+    TS4231(); //Yeah don't use this usually. The defaults are 0 and 1. Follow up with "SetPins()"
     TS4231(int device_E_pin, int device_D_pin);
+    void setPins(int device_E_pin, int device_D_pin);
     bool waitForLight(uint16_t light_timeout);  //timeout in milliseconds
     bool goToSleep(void);
     uint8_t configDevice(uint16_t config_val = CFG_WORD);
     bool goToWatch(void);
 
-    bool isLow;
+    volatile bool isLow;
 
     int E_pin;
     int D_pin;
 
-    bool interruptTriggered;
+    volatile int writeIndex;
     //Read as: "High to Low Time", or "Low to High Time"
-    unsigned long highToLowTime; //Activation Time
-    unsigned long lowToHighTime; //Deactivation Time
+    volatile unsigned long highToLowTime; //Activation Time
+    volatile unsigned long lowToHighTime; //Deactivation Time
+    volatile unsigned long lastPulseTime;
+
+    volatile bool hasBeenRead = false;
 
   private:
+    
     uint8_t checkBus(void);
     void ts_delayUs(unsigned int delay_val);  //delay in microseconds
     void ts_pinMode(int pin, uint8_t mode);

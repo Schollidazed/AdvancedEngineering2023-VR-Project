@@ -5,24 +5,21 @@ public class IRSensor
     private int lighthouse;
     private int axis;
 
-    private uint sweepTime;
+    private UInt16 sweepTime;
 
-    private double xAngleTmp, yAngleTmp;
+    //NOTE: If the value in these is < 0, then it shouldn't be treated as a real value.
+    public double[] lighthouse0xy = new double[2];
+    public double[] lighthouse1xy = new double[2];
 
-    public Vector2 lighthouse0xy;
-    public Vector2 lighthouse1xy;
-
-    RateOfChangeLimiter limiter;
+    
 
     //Assume that runtime detected that it belongs to this sensor.
 
-    public IRSensor(double MaxRate)
-    {
-        limiter = new RateOfChangeLimiter(MaxRate);
-    }
+    public IRSensor(){}
 
     public void updatePosition(UInt32 data)
     {
+        //Debug.Log("Proccessing " + data);
         ProcessData(data);
         SetAngle();
     }
@@ -30,64 +27,67 @@ public class IRSensor
     //parses sent data from runtime, gives lighthouse, axis, and sweeptime value.
     private void ProcessData(UInt32 data)
     {
-        uint tempTime = 0;
-        for (int i = 25; i >= 0; i--)
+        UInt16 tempTime = 0;
+        for (int i = BLEArduinoVR.DATA_LENGTH; i >= 0; i--)
         {
             int bit = (int) (data >> i) & 1;
             //We should already have the Sensor data, no need to process that.
-            if (i == 25)
+            if (i == BLEArduinoVR.LIGHTHOUSE_RIGHTSHIFT)
             {
                 this.lighthouse = bit;
             }
-            else if (i == 24)
+            else if (i == BLEArduinoVR.AXIS_RIGHTSHIFT)
             {
                 this.axis = bit;
             }
             else
             {
                 tempTime <<= 1;
-                tempTime |= (uint) bit;
+                tempTime |= (UInt16) bit;
             }
         }
         this.sweepTime = tempTime;
 
-        Debug.Log("Processed: " + data + " Lighthouse: " + this.lighthouse + " Axis: " + this.axis + " Sweep Time: " + this.sweepTime);
+        //Debug.Log("Lighthouse: " + this.lighthouse + " Axis: " + this.axis + " Sweep Time: " + this.sweepTime);
     }
     //Sets the angle using a predefined function. 
     private void SetAngle()
     {
         //Check Validity of Sweeptime
-        if (this.sweepTime >= 8333){Debug.Log("Sweep Time Was Too High."); return;}
-
-        //Check axis, and apply correct angle
-        //0 axis = y angle
-        //1 axis = x angle
-        if (axis == 0) { 
-            this.yAngleTmp = sweepTimeToDegrees(this.sweepTime);
-            //Debug.Log("X: " + xAngleTmp);
-        }
-        else { 
-            this.xAngleTmp = sweepTimeToDegrees(this.sweepTime);
-            //Debug.Log("Y: " + yAngleTmp);
-        }
-
-        if (this.lighthouse == 0) 
+        //if Sweep time == 0x4000, then it was not swept.
+        if (this.sweepTime >= 8333)
         {
-            this.lighthouse0xy.x = (float) this.xAngleTmp; 
-            this.lighthouse0xy.y = (float) this.yAngleTmp;
-            //Debug.Log("Lighthouse is 0"); 
+            //Debug.Log("Sweep Time Was Too High."); 
+            if(this.sweepTime == 0x4000)
+            {
+                //Debug.Log("Sensor was not swept."); 
+            }
+            switch (this.lighthouse)
+            {
+                case 0:
+                    this.lighthouse0xy[this.axis] = (-1);
+                    break;
+                case 1:
+                    this.lighthouse1xy[this.axis] = (-1);
+                    break;
+            }
             return;
         }
-        else if (this.lighthouse == 1)
-        { 
-            this.lighthouse1xy.x = (float)limiter.calculate(this.xAngleTmp);
-            this.lighthouse1xy.y = (float)limiter.calculate(this.yAngleTmp);
-            //Debug.Log("Lighthouse is 1"); 
-            return;
+
+        double newAngle = sweepTimeToDegrees(this.sweepTime); ;
+
+        switch(this.lighthouse)
+        {
+            case 0:
+                this.lighthouse0xy[this.axis] = (newAngle);
+                break;
+            case 1:
+                this.lighthouse1xy[this.axis] = (newAngle);
+                break;
         }
     }
-    private double sweepTimeToDegrees(uint time) { 
-        return ( (360.0 * (double) time) * (60.0 / Math.Pow(10.0, 6.0) ) ); 
+    private double sweepTimeToDegrees(UInt16 time) { 
+        return ( (360.0 * time) * (60.0 / Math.Pow(10.0, 6.0) ) ); 
     }
 
     
