@@ -4,11 +4,10 @@
 //NOTE: In order for this to properly work, both lighthouses must be active.
 #include "Header/ts4231.h"
 #include "Header/ts4231.cpp"
-#include <string.h>
 
 #define SerialTX                Serial1
 
-#define NUM_SENSORS                     2
+#define NUM_SENSORS                     4
 #define TS4231_LIGHT_TIMEOUT            1000                            //in mS
 #define MICROSECONDS_TO_TICKS           48.0                            //in Ticks/uS
 #define LOWEST_TICK_COUNT               2501.0                          //In uS
@@ -37,7 +36,7 @@
 ///////////////////////////////////////////
 
     //E pin then D pin.
-    int EDPins[][2] = {{53, 51}, {52, 50} /*,{}, {}, {}, {}, {}*/};
+    int EDPins[][2] = {{28, 29}, {32, 33}, {24, 25}, {22, 23}};
     //NOTE: When pin drops low, that's the start of an IR signal.
 
     TS4231 sensorList[NUM_SENSORS];
@@ -130,12 +129,13 @@
 ///////////////////////////////////////////
 
 void setup(){
-    while(!SerialTX){}
-
     SerialTX.begin(115200);
     Serial.begin(115200);
 
-    //Serial.println("Hello, please wait...");
+    while(!SerialTX){}
+
+    Serial.println("Hello, please wait...");
+    delay(500);
 
     //HM-10 only communicates AT commands when NL-CR are off.
     // delay(500);
@@ -260,6 +260,8 @@ void TS4231_attachIntterupts(){
     //Just copy and paste this, only change the first value in the list, and iterate the ISR up.
     attachInterrupt(digitalPinToInterrupt(EDPins[0][0]), ISR_sensor0, CHANGE);
     attachInterrupt(digitalPinToInterrupt(EDPins[1][0]), ISR_sensor1, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(EDPins[2][0]), ISR_sensor2, CHANGE);
+    attachInterrupt(digitalPinToInterrupt(EDPins[3][0]), ISR_sensor3, CHANGE);
 }
 
 //ISRs can't take parameters or serial communications :(
@@ -296,6 +298,38 @@ void ISR_sensor1(){
         sensorSchedule[sensorList[1].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime = sensorList[1].highToLowTime;
         sensorSchedule[sensorList[1].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime = time;
         sensorSchedule[sensorList[1].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].lastPulseTime = sensorList[1].lastPulseTime;
+    }
+}
+void ISR_sensor2(){
+    unsigned int time = micros();
+    if (!digitalRead(sensorList[2].E_pin)){
+        scheduleWriteIndex++;
+        sensorList[2].writeIndex = scheduleWriteIndex;
+        sensorSchedule[sensorList[2].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor = -1;
+        sensorList[2].lastPulseTime = sensorList[2].highToLowTime;
+        sensorList[2].highToLowTime = time;
+    }
+    else{
+        sensorSchedule[sensorList[2].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor = 2;
+        sensorSchedule[sensorList[2].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime = sensorList[2].highToLowTime;
+        sensorSchedule[sensorList[2].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime = time;
+        sensorSchedule[sensorList[2].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].lastPulseTime = sensorList[2].lastPulseTime;
+    }
+}
+void ISR_sensor3(){
+    unsigned int time = micros();
+    if (!digitalRead(sensorList[3].E_pin)){
+        scheduleWriteIndex++;
+        sensorList[3].writeIndex = scheduleWriteIndex;
+        sensorSchedule[sensorList[3].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor = -1;
+        sensorList[3].lastPulseTime = sensorList[3].highToLowTime;
+        sensorList[3].highToLowTime = time;
+    }
+    else{
+        sensorSchedule[sensorList[3].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].sensor = 3;
+        sensorSchedule[sensorList[3].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].highToLowTime = sensorList[3].highToLowTime;
+        sensorSchedule[sensorList[3].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].lowToHighTime = time;
+        sensorSchedule[sensorList[3].writeIndex & SCHEDULE_BUFFER_MODULUS_MASK].lastPulseTime = sensorList[3].lastPulseTime;
     }
 }
 void ISR_input(){
@@ -527,8 +561,8 @@ void encodeAndSendData(OotxPulseInfo* OOTX){
         
     SerialTX.print(data);
     SerialTX.print(';');
-    Serial.print(data);
-    Serial.println(';');
+    // Serial.print(data);
+    // Serial.println(';');
 
     debugData();
 
@@ -570,15 +604,15 @@ void debugData(){
             sweep |= bit;
         }
     }
-    Serial.print(" Sensor - ");
-    Serial.print(sensor);
-    Serial.print(" Lighthouse - ");
-    Serial.print(lighthouse);
-    Serial.print(" Axis - ");
-    Serial.print(axis);
-    Serial.print(" Sweep Time - ");
-    Serial.print(sweep);
-    Serial.println();
+    // Serial.print(" Sensor - ");
+    // Serial.print(sensor);
+    // Serial.print(" Lighthouse - ");
+    // Serial.print(lighthouse);
+    // Serial.print(" Axis - ");
+    // Serial.print(axis);
+    // Serial.print(" Sweep Time - ");
+    // Serial.print(sweep);
+    // Serial.println();
 }
 
 

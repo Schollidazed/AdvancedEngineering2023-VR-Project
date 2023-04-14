@@ -5,13 +5,17 @@ using System.Collections.Generic;
 using System.Text;
 using System.Threading;
 using UnityEngine;
+//using MathNet.Numerics.LinearAlgebra;
+//using MathNet.Numerics.LinearAlgebra.Double;
 
 public class BLEArduinoVR : MonoBehaviour
 {
+    //////////////////////////////////BLE STUFF/////////////////////////////////
     BLE ble;
     BLE.BLEScan scan;
 
-    public int NumberOfSensors;
+    // BLE Threads 
+    Thread connectionThread, readingThread, mainThread;
 
     public string targetDeviceName = "ADV-ENG2023";
     public string serviceUuid = "{0000FFE0-0000-1000-8000-00805F9B34FB}";
@@ -26,8 +30,15 @@ public class BLEArduinoVR : MonoBehaviour
     IDictionary<string, string> discoveredDevices = new Dictionary<string, string>();
     volatile byte[] packageReceived = null;
 
-    public IRSensor[] sensorList;
+    public bool isScanning = false, isFinishedScanning = false, isConnecting = false, isReading = false;
+    /////////////////////////////////////////////////////////////////////////////
+
+
+    ////////////////////////Sensor readings and Transformations//////////////////
+    public int NumberOfSensors;
     public bool InputVal;
+
+    public IRSensor[] sensorList;
 
     //Must be to the power of 2.
     volatile int[] ringBuffer;
@@ -44,12 +55,30 @@ public class BLEArduinoVR : MonoBehaviour
     public static int SENSOR_RIGHTSHIFT = 18;
     public static int SENSOR_MASK = 31; //Sensor takes up 5 bits. 
     public static int LIGHTHOUSE_RIGHTSHIFT = 17;
+    public static int LIGHTHOUSE_MASK;
     public static int AXIS_RIGHTSHIFT = 16;
+    public static int AXIS_MASK;
+    public static int SWEEP_MASK;
 
-    public bool isScanning = false, isFinishedScanning = false, isConnecting = false, isReading = false;
+    //The Lighthouse Transform Matricies:
+    /*public Matrix<double> LIGHTHOUSE_0_TRANSFORM_MATRIX = Matrix.Build.DenseOfColumnArrays(
+         new double[][] {
+            new double[] { 0, 0, 0, 0 }, //Rotation X basis
+            new double[] { 0, 0, 0, 0 }, //Rotation Y basis
+            new double[] { 0, 0, 0, 0 }, //Rotation Z Basis
+            new double[] { 0, 0, 0, 1 }, //Position of Lighthouse
+    });
+    public Matrix<double> LIGHTHOUSE_1_TRANSFORM_MATRIX = Matrix.Build.DenseOfColumnArrays(
+         new double[][] {
+            new double[] { 0, 0, 0, 0 }, //Rotation X basis
+            new double[] { 0, 0, 0, 0 }, //Rotation Y basis
+            new double[] { 0, 0, 0, 0 }, //Rotation Z Basis
+            new double[] { 0, 0, 0, 1 }, //Position of Lighthouse
+    });*/
+    /////////////////////////////////////////////////////////////////////////////
+    
 
-    // BLE Threads 
-    Thread connectionThread, readingThread, mainThread;
+    //Let the code begin.
 
     public void startBLE()
     {
@@ -59,6 +88,7 @@ public class BLEArduinoVR : MonoBehaviour
         sensorList = new IRSensor[NumberOfSensors];
         for (int i = 0; i < NumberOfSensors; i++)
         {
+            //sensorList[i] = new IRSensor(LIGHTHOUSE_0_TRANSFORM_MATRIX, LIGHTHOUSE_1_TRANSFORM_MATRIX);
             sensorList[i] = new IRSensor();
             Debug.Log("Sensor " + i + " Created.");
         }
@@ -106,7 +136,7 @@ public class BLEArduinoVR : MonoBehaviour
             //Debug.Log("Updating: Sensor " + sensor);
             try
             {
-                sensorList[sensor].updatePosition((UInt32)data);
+                sensorList[sensor].updatePosition( (UInt32) data );
             }
             catch (Exception e)
             {
@@ -115,7 +145,6 @@ public class BLEArduinoVR : MonoBehaviour
             bufferReadIndex++;
             bufferFillLength--;
         }
-        //NOTE: Canvas size is variable. We need to either lock the size, or scale the values to it.
     }
 
     public double[] getSensorData(int sensor, int lighthouse)
@@ -160,6 +189,7 @@ public class BLEArduinoVR : MonoBehaviour
     {
         while (!ble.isConnected)
         {
+            Debug.Log("Connecting...");
             try
             {
                 ble.Connect(deviceId, serviceUuid, characteristicUuids);
