@@ -1,0 +1,349 @@
+<?xml version="1.0" encoding="utf-8"?>
+<COLLADA xmlns="http://www.collada.org/2005/11/COLLADASchema" version="1.4.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <asset>
+    <contributor>
+      <author>Blender User</author>
+      <authoring_tool>Blender 3.5.0 commit date:2023-03-29, commit time:02:56, hash:1be25cfff18b</authoring_tool>
+    </contributor>
+    <created>2023-04-14T00:50:36</created>
+    <modified>2023-04-14T00:50:36</modified>
+    <unit name="meter" meter="1"/>
+    <up_axis>Z_UP</up_axis>
+  </asset>
+  <library_effects>
+    <effect id="ground_under-effect">
+      <profile_COMMON>
+        <newparam sid="z3_st_c1_png-surface">
+          <surface type="2D">
+            <init_from>z3_st_c1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="z3_st_c1_png-sampler">
+          <sampler2D>
+            <source>z3_st_c1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="z3_st_c1_png-sampler" texcoord="texcoords"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pole1-effect">
+      <profile_COMMON>
+        <newparam sid="z3_st_c1_png-surface">
+          <surface type="2D">
+            <init_from>z3_st_c1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="z3_st_c1_png-sampler">
+          <sampler2D>
+            <source>z3_st_c1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="z3_st_c1_png-sampler" texcoord="texcoords"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="pole2-effect">
+      <profile_COMMON>
+        <newparam sid="z3_st_b1_png-surface">
+          <surface type="2D">
+            <init_from>z3_st_b1_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="z3_st_b1_png-sampler">
+          <sampler2D>
+            <source>z3_st_b1_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="z3_st_b1_png-sampler" texcoord="texcoords"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="ground_side-effect">
+      <profile_COMMON>
+        <newparam sid="z3_st_a_png-surface">
+          <surface type="2D">
+            <init_from>z3_st_a_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="z3_st_a_png-sampler">
+          <sampler2D>
+            <source>z3_st_a_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="z3_st_a_png-sampler" texcoord="texcoords"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+    <effect id="ground_sail-effect">
+      <profile_COMMON>
+        <newparam sid="z3_st_a_png-surface">
+          <surface type="2D">
+            <init_from>z3_st_a_png</init_from>
+          </surface>
+        </newparam>
+        <newparam sid="z3_st_a_png-sampler">
+          <sampler2D>
+            <source>z3_st_a_png-surface</source>
+          </sampler2D>
+        </newparam>
+        <technique sid="common">
+          <lambert>
+            <emission>
+              <color sid="emission">0 0 0 1</color>
+            </emission>
+            <diffuse>
+              <texture texture="z3_st_a_png-sampler" texcoord="texcoords"/>
+            </diffuse>
+            <index_of_refraction>
+              <float sid="ior">1.45</float>
+            </index_of_refraction>
+          </lambert>
+        </technique>
+      </profile_COMMON>
+    </effect>
+  </library_effects>
+  <library_images>
+    <image id="z3_st_a_png" name="z3_st_a_png">
+      <init_from>z3_st_a.png</init_from>
+    </image>
+    <image id="z3_st_b1_png" name="z3_st_b1_png">
+      <init_from>z3_st_b1.png</init_from>
+    </image>
+    <image id="z3_st_c1_png" name="z3_st_c1_png">
+      <init_from>z3_st_c1.png</init_from>
+    </image>
+  </library_images>
+  <library_materials>
+    <material id="ground_under-material" name="ground_under">
+      <instance_effect url="#ground_under-effect"/>
+    </material>
+    <material id="pole1-material" name="pole1">
+      <instance_effect url="#pole1-effect"/>
+    </material>
+    <material id="pole2-material" name="pole2">
+      <instance_effect url="#pole2-effect"/>
+    </material>
+    <material id="ground_side-material" name="ground_side">
+      <instance_effect url="#ground_side-effect"/>
+    </material>
+    <material id="ground_sail-material" name="ground_sail">
+      <instance_effect url="#ground_sail-effect"/>
+    </material>
+  </library_materials>
+  <library_geometries>
+    <geometry id="_boss_stage-mesh" name="3boss_stage">
+      <mesh>
+        <source id="_boss_stage-mesh-positions">
+          <float_array id="_boss_stage-mesh-positions-array" count="150">-1.145777 1.015439 0.1411428 -1.001943 1.071578 -0.1411428 1.001943 1.071578 -0.1411428 1.001943 0.9593002 -0.1411428 -1.001943 0.9593002 -0.1411428 -1.001943 1.071578 0.1411428 -1.001943 0.9593002 0.1411428 1.001943 1.071578 0.1411428 1.001943 0.9593002 0.1411428 1.145777 1.015439 0.1411428 1.001943 1.015439 0.2578242 1.001943 1.015439 -0.2578242 1.145777 1.015439 -0.1411428 -1.145777 1.015439 -0.1411428 -1.001943 1.015439 -0.2578242 -1.001943 1.015439 0.2578242 -1.001943 -0.9884467 -0.07998895 -1.001943 0.01349633 -0.07998901 -1.001943 -0.9884467 -0.159978 -1.001943 0.01349627 -0.1599781 1.001943 -0.9884467 -0.159978 1.001943 -0.9884467 -0.07998895 1.001943 0.01349633 -0.07998901 -1.001943 1.015439 -0.1599782 -1.001943 1.015439 -0.07998907 -1.001943 0.01349633 0 1.001943 1.015439 -0.07998907 1.001943 1.015439 -0.1599782 1.001943 0.01349627 -0.1599781 1.001943 1.015439 0 -1.001943 1.015439 0 1.001943 0.01349633 0 1.001943 -0.9884467 1.51286e-7 -1.001943 -0.9884467 1.51286e-7 -1.145777 -1.015439 0.1411428 -1.001943 -1.071578 -0.1411428 1.001943 -1.071578 -0.1411428 1.001943 -0.9593002 -0.1411428 -1.001943 -0.9593002 -0.1411428 -1.001943 -1.071578 0.1411428 -1.001943 -0.9593002 0.1411428 1.001943 -1.071578 0.1411428 1.001943 -0.9593002 0.1411428 1.145777 -1.015439 0.1411428 1.001943 -1.015439 0.2578242 1.001943 -1.015439 -0.2578242 1.145777 -1.015439 -0.1411428 -1.145777 -1.015439 -0.1411428 -1.001943 -1.015439 -0.2578242 -1.001943 -1.015439 0.2578242</float_array>
+          <technique_common>
+            <accessor source="#_boss_stage-mesh-positions-array" count="50" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="_boss_stage-mesh-normals">
+          <float_array id="_boss_stage-mesh-normals-array" count="144">0 0 1 0.3635926 -0.931558 0 0.3635931 -0.9315579 0 0.3635928 0.9315581 0 0.3635923 0.9315583 0 -0.3635931 -0.9315579 0 -0.3635926 -0.931558 0 -0.3635928 0.9315581 0 -0.3635923 0.9315583 0 -1 0 0 1 0 0 0.331791 0.8500785 0.4090006 0.3317913 -0.8500783 -0.4090005 0.3317913 -0.8500783 0.4090005 0.331791 0.8500785 -0.4090006 -0.331791 0.8500785 -0.4090006 -0.331791 0.8500785 0.4090006 -0.3317913 -0.8500783 -0.4090005 -0.3317913 -0.8500783 0.4090005 1 0 0 1 0 0 -1 0 0 1 0 0 0 0 1 0 0 1 0.3635926 0.931558 0 0.3635931 0.9315579 0 0.3635928 -0.9315581 0 0.3635923 -0.9315583 0 -0.3635931 0.9315579 0 -0.3635926 0.931558 0 -0.3635928 -0.9315581 0 -0.3635923 -0.9315583 0 0.331791 -0.8500785 0.4090006 0.3317913 0.8500783 -0.4090005 0.3317913 0.8500783 0.4090005 0.331791 -0.8500785 -0.4090006 -0.331791 -0.8500785 -0.4090006 -0.331791 -0.8500785 0.4090006 -0.3317913 0.8500783 -0.4090005 -0.3317913 0.8500783 0.4090005 0 0 1 0 0 1 -1 0 0 -1 0 0 -1 0 0 1 0 0 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#_boss_stage-mesh-normals-array" count="48" stride="3">
+              <param name="X" type="float"/>
+              <param name="Y" type="float"/>
+              <param name="Z" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="_boss_stage-mesh-map-0">
+          <float_array id="_boss_stage-mesh-map-0-array" count="432">0.5078125 0.5 1.425781 0.5 1.425781 0.5 0.5078125 0.5 1.425781 0.5 1.425781 0.5 -2.628906 0.2695313 -0.4492188 0.2695313 -2.628906 0.3632813 -0.4492188 0.2695313 -0.4492188 0.3632813 -2.628906 0.3632813 -0.4492188 0.1777343 -0.4492188 0.2695313 -2.628906 0.1777343 -0.4492188 0.2695313 -2.628906 0.2695313 -2.628906 0.1777343 -0.4492188 0.3632813 -0.4492188 0.2695313 -2.628906 0.3632813 -0.4492188 0.2695313 -2.628906 0.2695313 -2.628906 0.3632813 -0.4492188 0.1777343 -2.628906 0.1777343 -0.4492188 0.2695313 -2.628906 0.1777343 -2.628906 0.2695313 -0.4492188 0.2695313 -0.4492188 0.4707031 -2.621094 0.578125 -0.4492188 0.578125 -2.621094 0.4707031 -0.4492188 0.578125 -2.621094 0.578125 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9570313 0.9853515 0.02734375 0.9238281 0.02734375 0.9853515 0.9570313 0.9238281 0.02734375 0.9853515 0.02734375 0.9238281 0.02734375 0.9853515 0.9570313 0.9238281 0.02734375 0.9238281 0.02734375 0.9238281 0.9570313 0.9853515 0.02734375 0.9853515 0.02734375 0.9853515 0.9570313 0.9238281 0.02734375 0.9238281 0.9570313 0.9238281 0.02734375 0.9853515 0.02734375 0.9238281 0.02734375 0.9853515 0.9570313 0.9238281 0.02734375 0.9238281 0.9570313 0.9238281 0.02734375 0.9853515 0.02734375 0.9238281 0.02734375 0.9746094 0.9570313 0.02539062 0.02734375 0.02539062 0.9570313 0.9746094 0.02734375 0.02539062 0.9570313 0.02539062 -2.628906 0.2695313 -2.628906 0.3632813 -0.4492188 0.2695313 -0.4492188 0.2695313 -2.628906 0.3632813 -0.4492188 0.3632813 -0.4492188 0.1777343 -2.628906 0.1777343 -0.4492188 0.2695313 -0.4492188 0.2695313 -2.628906 0.1777343 -2.628906 0.2695313 -0.4492188 0.3632813 -2.628906 0.3632813 -0.4492188 0.2695313 -0.4492188 0.2695313 -2.628906 0.3632813 -2.628906 0.2695313 -0.4492188 0.1777343 -0.4492188 0.2695313 -2.628906 0.1777343 -2.628906 0.1777343 -0.4492188 0.2695313 -2.628906 0.2695313 -2.621094 0.578125 -0.4492188 0.4707031 -0.4492188 0.578125 -0.4492188 0.578125 -2.621094 0.4707031 -2.621094 0.578125 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.9609375 0.5 0.5078125 0.5 0.5078125 0.5 1.425781 0.5 0.5078125 0.5 0.5078125 0.5 1.425781 0.5 -0.4492188 0.4707031 -2.621094 0.4707031 -2.621094 0.578125 -2.621094 0.4707031 -0.4492188 0.4707031 -0.4492188 0.578125 0.9570313 0.9853515 0.9570313 0.9238281 0.02734375 0.9238281 0.9570313 0.9238281 0.9570313 0.9853515 0.02734375 0.9853515 0.02734375 0.9853515 0.9570313 0.9853515 0.9570313 0.9238281 0.02734375 0.9238281 0.9570313 0.9238281 0.9570313 0.9853515 0.02734375 0.9853515 0.9570313 0.9853515 0.9570313 0.9238281 0.9570313 0.9238281 0.9570313 0.9853515 0.02734375 0.9853515 0.02734375 0.9853515 0.9570313 0.9853515 0.9570313 0.9238281 0.9570313 0.9238281 0.9570313 0.9853515 0.02734375 0.9853515 0.02734375 0.9746094 0.9570313 0.9746094 0.9570313 0.02539062 0.9570313 0.9746094 0.02734375 0.9746094 0.02734375 0.02539062 -2.621094 0.578125 -2.621094 0.4707031 -0.4492188 0.4707031 -0.4492188 0.578125 -0.4492188 0.4707031 -2.621094 0.4707031</float_array>
+          <technique_common>
+            <accessor source="#_boss_stage-mesh-map-0-array" count="216" stride="2">
+              <param name="S" type="float"/>
+              <param name="T" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="_boss_stage-mesh-colors-colors" name="colors">
+          <float_array id="_boss_stage-mesh-colors-colors-array" count="864">0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.3882353 0.3882353 0.3882353 1 1 1 1 1 0.3882353 0.3882353 0.3882353 1 1 1 1 1 1 1 1 1 0.3882353 0.3882353 0.3882353 1 0.6117647 0.6117647 0.6117647 1 0.6117647 0.6117647 0.6117647 1 0.1921569 0.1921569 0.1921569 1 0.6117647 0.6117647 0.6117647 1 0.1921569 0.1921569 0.1921569 1 0.1921569 0.1921569 0.1921569 1 1 1 1 1 1 1 1 1 0.3882353 0.3882353 0.3882353 1 1 1 1 1 0.3882353 0.3882353 0.3882353 1 0.3882353 0.3882353 0.3882353 1 0.6117647 0.6117647 0.6117647 1 0.1921569 0.1921569 0.1921569 1 0.6117647 0.6117647 0.6117647 1 0.1921569 0.1921569 0.1921569 1 0.1921569 0.1921569 0.1921569 1 0.6117647 0.6117647 0.6117647 1 1 1 1 1 0.1921569 0.1921569 0.1921569 1 1 1 1 1 0.1921569 0.1921569 0.1921569 1 1 1 1 1 0.1921569 0.1921569 0.1921569 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0.6470589 1 1 0.9019608 0.5803922 1 1 1 0.6470589 1 1 0.9019608 0.5803922 1 1 0.8392157 0.5176471 1 1 0.9019608 0.5803922 1 1 0.8392157 0.5176471 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 1 0.6470589 1 1 1 0.6470589 1 1 0.8392157 0.5176471 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 1 0.6470589 1 1 0.9019608 0.5803922 1 1 1 0.6470589 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 0.8392157 0.5176471 1 1 0.9019608 0.5803922 1 1 1 0.6470589 1 1 1 0.6470589 1 1 1 0.6470589 1 1 1 0.6470589 1 1 1 0.6470589 1 1 1 0.6470589 1 1 0.3882353 0.3882353 0.3882353 1 0.3882353 0.3882353 0.3882353 1 1 1 1 1 1 1 1 1 0.3882353 0.3882353 0.3882353 1 1 1 1 1 0.6117647 0.6117647 0.6117647 1 0.1921569 0.1921569 0.1921569 1 0.6117647 0.6117647 0.6117647 1 0.6117647 0.6117647 0.6117647 1 0.1921569 0.1921569 0.1921569 1 0.1921569 0.1921569 0.1921569 1 1 1 1 1 0.3882353 0.3882353 0.3882353 1 1 1 1 1 1 1 1 1 0.3882353 0.3882353 0.3882353 1 0.3882353 0.3882353 0.3882353 1 0.6117647 0.6117647 0.6117647 1 0.6117647 0.6117647 0.6117647 1 0.1921569 0.1921569 0.1921569 1 0.1921569 0.1921569 0.1921569 1 0.6117647 0.6117647 0.6117647 1 0.1921569 0.1921569 0.1921569 1 0.1921569 0.1921569 0.1921569 1 1 1 1 1 1 1 1 1 1 1 1 1 0.1921569 0.1921569 0.1921569 1 0.1921569 0.1921569 0.1921569 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 0.7411765 0.7411765 0.7411765 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 1 1 1 1 0.1921569 0.1921569 0.1921569 1 0.1921569 0.1921569 0.1921569 1 0.1921569 0.1921569 0.1921569 1 1 1 1 1 1 1 1 1 1 0.6470589 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 1 0.6470589 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 1 0.6470589 1 1 1 0.6470589 1 1 1 0.6470589 1 1 1 0.6470589 1 1 0.9019608 0.5803922 1 1 0.9019608 0.5803922 1 1 0.8392157 0.5176471 1 1 0.8392157 0.5176471 1 1 1 0.6470589 1 1 1 0.6470589 1 1 1 0.6470589 1 1 1 0.6470589 1 1 1 0.6470589 1 1 1 0.6470589 1 1 0.1921569 0.1921569 0.1921569 1 0.1921569 0.1921569 0.1921569 1 1 1 1 1 1 1 1 1 1 1 1 1 0.1921569 0.1921569 0.1921569 1</float_array>
+          <technique_common>
+            <accessor source="#_boss_stage-mesh-colors-colors-array" count="216" stride="4">
+              <param name="R" type="float"/>
+              <param name="G" type="float"/>
+              <param name="B" type="float"/>
+              <param name="A" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <vertices id="_boss_stage-mesh-vertices">
+          <input semantic="POSITION" source="#_boss_stage-mesh-positions"/>
+        </vertices>
+        <triangles material="ground_under-material" count="4">
+          <input semantic="VERTEX" source="#_boss_stage-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#_boss_stage-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#_boss_stage-mesh-map-0" offset="2" set="2"/>
+          <input semantic="COLOR" source="#_boss_stage-mesh-colors-colors" offset="3" set="0"/>
+          <p>20 0 0 0 19 0 1 1 18 0 2 2 28 0 3 3 23 0 4 4 19 0 5 5 20 41 168 168 28 41 169 169 19 41 170 170 28 42 171 171 27 42 172 172 23 42 173 173</p>
+        </triangles>
+        <triangles material="pole1-material" count="24">
+          <input semantic="VERTEX" source="#_boss_stage-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#_boss_stage-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#_boss_stage-mesh-map-0" offset="2" set="2"/>
+          <input semantic="COLOR" source="#_boss_stage-mesh-colors-colors" offset="3" set="0"/>
+          <p>12 1 6 6 9 1 7 7 3 1 8 8 9 2 9 9 8 2 10 10 3 2 11 11 7 3 12 12 9 3 13 13 2 3 14 14 9 4 15 15 12 4 16 16 2 4 17 17 6 5 18 18 0 5 19 19 4 5 20 20 0 6 21 21 13 6 22 22 4 6 23 23 5 7 24 24 1 7 25 25 0 7 26 26 1 8 27 27 13 8 28 28 0 8 29 29 7 9 30 30 3 9 31 31 8 9 32 32 1 10 33 33 6 10 34 34 4 10 35 35 46 25 102 102 37 25 103 103 43 25 104 104 43 26 105 105 37 26 106 106 42 26 107 107 41 27 108 108 36 27 109 109 43 27 110 110 43 28 111 111 36 28 112 112 46 28 113 113 40 29 114 114 38 29 115 115 34 29 116 116 34 30 117 117 38 30 118 118 47 30 119 119 39 31 120 120 34 31 121 121 35 31 122 122 35 32 123 123 34 32 124 124 47 32 125 125 37 9 126 126 41 9 127 127 42 9 128 128 40 10 129 129 35 10 130 130 38 10 131 131 7 9 174 174 2 9 175 175 3 9 176 176 1 10 177 177 5 10 178 178 6 10 179 179 37 9 210 210 36 9 211 211 41 9 212 212 40 10 213 213 39 10 214 214 35 10 215 215</p>
+        </triangles>
+        <triangles material="pole2-material" count="24">
+          <input semantic="VERTEX" source="#_boss_stage-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#_boss_stage-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#_boss_stage-mesh-map-0" offset="2" set="2"/>
+          <input semantic="COLOR" source="#_boss_stage-mesh-colors-colors" offset="3" set="0"/>
+          <p>7 9 36 36 8 9 37 37 10 9 38 38 9 11 39 39 7 11 40 40 10 11 41 41 12 12 42 42 3 12 43 43 11 12 44 44 8 13 45 45 9 13 46 46 10 13 47 47 3 9 48 48 2 9 49 49 11 9 50 50 11 14 51 51 2 14 52 52 12 14 53 53 13 15 54 54 1 15 55 55 14 15 56 56 14 10 57 57 1 10 58 58 4 10 59 59 15 10 60 60 6 10 61 61 5 10 62 62 15 16 63 63 5 16 64 64 0 16 65 65 14 17 66 66 4 17 67 67 13 17 68 68 15 18 69 69 0 18 70 70 6 18 71 71 41 9 132 132 44 9 133 133 42 9 134 134 43 33 135 135 44 33 136 136 41 33 137 137 46 34 138 138 45 34 139 139 37 34 140 140 42 35 141 141 44 35 142 142 43 35 143 143 37 9 144 144 45 9 145 145 36 9 146 146 45 36 147 147 46 36 148 148 36 36 149 149 47 37 150 150 48 37 151 151 35 37 152 152 48 10 153 153 38 10 154 154 35 10 155 155 49 10 156 156 39 10 157 157 40 10 158 158 49 38 159 159 34 38 160 160 39 38 161 161 48 39 162 162 47 39 163 163 38 39 164 164 49 40 165 165 40 40 166 166 34 40 167 167</p>
+        </triangles>
+        <triangles material="ground_side-material" count="16">
+          <input semantic="VERTEX" source="#_boss_stage-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#_boss_stage-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#_boss_stage-mesh-map-0" offset="2" set="2"/>
+          <input semantic="COLOR" source="#_boss_stage-mesh-colors-colors" offset="3" set="0"/>
+          <p>25 9 72 72 16 9 73 73 33 9 74 74 17 9 75 75 18 9 76 76 16 9 77 77 20 19 78 78 22 19 79 79 21 19 80 80 21 20 81 81 31 20 82 82 32 20 83 83 23 21 84 84 17 21 85 85 24 21 86 86 17 9 87 87 30 9 88 88 24 9 89 89 29 22 90 90 22 22 91 91 26 22 92 92 22 10 93 93 27 10 94 94 26 10 95 95 25 43 180 180 17 43 181 181 16 43 182 182 17 44 183 183 19 44 184 184 18 44 185 185 20 10 186 186 28 10 187 187 22 10 188 188 21 10 189 189 22 10 190 190 31 10 191 191 23 9 192 192 19 9 193 193 17 9 194 194 17 45 195 195 25 45 196 196 30 45 197 197 29 10 198 198 31 10 199 199 22 10 200 200 22 46 201 201 28 46 202 202 27 46 203 203</p>
+        </triangles>
+        <triangles material="ground_sail-material" count="4">
+          <input semantic="VERTEX" source="#_boss_stage-mesh-vertices" offset="0"/>
+          <input semantic="NORMAL" source="#_boss_stage-mesh-normals" offset="1"/>
+          <input semantic="TEXCOORD" source="#_boss_stage-mesh-map-0" offset="2" set="2"/>
+          <input semantic="COLOR" source="#_boss_stage-mesh-colors-colors" offset="3" set="0"/>
+          <p>30 23 96 96 31 23 97 97 29 23 98 98 25 24 99 99 32 24 100 100 31 24 101 101 30 47 204 204 25 47 205 205 31 47 206 206 25 24 207 207 33 24 208 208 32 24 209 209</p>
+        </triangles>
+      </mesh>
+    </geometry>
+  </library_geometries>
+  <library_controllers>
+    <controller id="Armature__boss_stage-skin" name="Armature">
+      <skin source="#_boss_stage-mesh">
+        <bind_shape_matrix>1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</bind_shape_matrix>
+        <source id="Armature__boss_stage-skin-joints">
+          <Name_array id="Armature__boss_stage-skin-joints-array" count="1">stage</Name_array>
+          <technique_common>
+            <accessor source="#Armature__boss_stage-skin-joints-array" count="1" stride="1">
+              <param name="JOINT" type="name"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Armature__boss_stage-skin-bind_poses">
+          <float_array id="Armature__boss_stage-skin-bind_poses-array" count="16">1 0 0 0 0 0 1 0 0 -1 0 1.015439 0 0 0 1</float_array>
+          <technique_common>
+            <accessor source="#Armature__boss_stage-skin-bind_poses-array" count="1" stride="16">
+              <param name="TRANSFORM" type="float4x4"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <source id="Armature__boss_stage-skin-weights">
+          <float_array id="Armature__boss_stage-skin-weights-array" count="50">1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1</float_array>
+          <technique_common>
+            <accessor source="#Armature__boss_stage-skin-weights-array" count="50" stride="1">
+              <param name="WEIGHT" type="float"/>
+            </accessor>
+          </technique_common>
+        </source>
+        <joints>
+          <input semantic="JOINT" source="#Armature__boss_stage-skin-joints"/>
+          <input semantic="INV_BIND_MATRIX" source="#Armature__boss_stage-skin-bind_poses"/>
+        </joints>
+        <vertex_weights count="50">
+          <input semantic="JOINT" source="#Armature__boss_stage-skin-joints" offset="0"/>
+          <input semantic="WEIGHT" source="#Armature__boss_stage-skin-weights" offset="1"/>
+          <vcount>1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 1 </vcount>
+          <v>0 0 0 1 0 2 0 3 0 4 0 5 0 6 0 7 0 8 0 9 0 10 0 11 0 12 0 13 0 14 0 15 0 16 0 17 0 18 0 19 0 20 0 21 0 22 0 23 0 24 0 25 0 26 0 27 0 28 0 29 0 30 0 31 0 32 0 33 0 34 0 35 0 36 0 37 0 38 0 39 0 40 0 41 0 42 0 43 0 44 0 45 0 46 0 47 0 48 0 49</v>
+        </vertex_weights>
+      </skin>
+    </controller>
+  </library_controllers>
+  <library_visual_scenes>
+    <visual_scene id="Scene" name="Scene">
+      <node id="Armature" name="Armature" type="NODE">
+        <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+        <node id="Armature_stage" name="stage" sid="stage" type="JOINT">
+          <matrix sid="transform">1 0 0 0 0 0 -1 1.015439 0 1 0 0 0 0 0 1</matrix>
+          <extra>
+            <technique profile="blender">
+              <layer sid="layer" type="string">0</layer>
+              <tip_x sid="tip_x" type="float">0</tip_x>
+              <tip_y sid="tip_y" type="float">0</tip_y>
+              <tip_z sid="tip_z" type="float">0.03131067</tip_z>
+            </technique>
+          </extra>
+        </node>
+        <node id="_boss_stage" name="3boss_stage" type="NODE">
+          <matrix sid="transform">1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 1</matrix>
+          <instance_controller url="#Armature__boss_stage-skin">
+            <skeleton>#Armature_stage</skeleton>
+            <bind_material>
+              <technique_common>
+                <instance_material symbol="ground_under-material" target="#ground_under-material">
+                  <bind_vertex_input semantic="texcoords" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+                <instance_material symbol="pole1-material" target="#pole1-material">
+                  <bind_vertex_input semantic="texcoords" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+                <instance_material symbol="pole2-material" target="#pole2-material">
+                  <bind_vertex_input semantic="texcoords" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+                <instance_material symbol="ground_side-material" target="#ground_side-material">
+                  <bind_vertex_input semantic="texcoords" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+                <instance_material symbol="ground_sail-material" target="#ground_sail-material">
+                  <bind_vertex_input semantic="texcoords" input_semantic="TEXCOORD" input_set="0"/>
+                </instance_material>
+              </technique_common>
+            </bind_material>
+          </instance_controller>
+        </node>
+      </node>
+    </visual_scene>
+  </library_visual_scenes>
+  <scene>
+    <instance_visual_scene url="#Scene"/>
+  </scene>
+</COLLADA>
