@@ -12,13 +12,13 @@
 
 void setup(){
     //SerialTX.begin(115200);
-    Serial.begin(115200);
+    Serial.begin(9600);
 
     //while(!SerialTX){}
 
     if(inputPin != -1) {
       pinMode(inputPin, INPUT);
-      attachInterrupt(digitalPinToInterrupt(inputPin), ISR_input, CHANGE);
+      attachInterrupt(digitalPinToInterrupt(inputPin), ISR_input, RISING);
     }
     
 }
@@ -28,9 +28,13 @@ void setup(){
 //Cycle is always: Master, Slave, Sweep. (Repeat)
 //NOTE: The sweep time cannot be larger than 1/120th of a second (8333 microseconds), so discard those any bigger than that.
 void loop(){
-    Serial.println(inputVal);
+    if(inputVal){
+      Serial.println("Fire!");
+      inputVal = false;
+    }
+    
 }   
 
 void ISR_input(){
-    inputVal = digitalRead(inputPin);
+    inputVal = true;
 }
