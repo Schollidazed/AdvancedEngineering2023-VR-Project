@@ -13,8 +13,11 @@ public class Blaster : MonoBehaviour
     public Transform spawnPoint;
     public float fireSpeed = 20;
 
+    private float totTimeElapsed = 0;
+
 
     public InputActionProperty blasterActivate;
+    private bool fire = false;
     private bool hasFired = false;
 
     //private Vector3 position;
@@ -32,9 +35,12 @@ public class Blaster : MonoBehaviour
         target.position = reference.transform.position;
         target.rotation = reference.transform.rotation;
 
-        if ((blasterActivate.action.ReadValue<float>() >= 1F) && !hasFired)
+        //(blasterActivate.action.ReadValue<float>() >= 1F
+
+        if (fire && !hasFired)
         {
             //Debug.Log("Ding!"); 
+            totTimeElapsed = 0;
 
             GameObject spawnedBullet = Instantiate(bullet);
             spawnedBullet.transform.position = spawnPoint.position;
@@ -43,11 +49,21 @@ public class Blaster : MonoBehaviour
             Destroy(spawnedBullet, 3);
 
             hasFired = true;
+            fire = false;
         }
 
-        if(hasFired && blasterActivate.action.ReadValue<float>() == 0){
+        if(hasFired){
             hasFired = false;
            // Debug.Log("AGHHHHHHHH");
+        }
+    }
+
+    void OnMessageArrived(string message)
+    {
+        Debug.Log(message);
+        if(message == "Fire!")
+        {
+            fire = true;
         }
     }
 }

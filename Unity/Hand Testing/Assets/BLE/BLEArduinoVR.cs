@@ -1,4 +1,3 @@
-using Palmmedia.ReportGenerator.Core.CodeAnalysis;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -82,7 +81,7 @@ public class BLEArduinoVR : MonoBehaviour
 
     //Let the code begin.
 
-    public void startBLE()
+    void Start()
     {
         ringBuffer = new int[RING_BUFFER_LENGTH];
         RING_BUFFER_MODULUS_MASK = RING_BUFFER_LENGTH - 1;
@@ -97,8 +96,6 @@ public class BLEArduinoVR : MonoBehaviour
 
         readingThread = new Thread(ReadBleData);
         readingThread.Priority = System.Threading.ThreadPriority.Normal;
-        mainThread = new Thread(updateBLE);
-        mainThread.Priority = System.Threading.ThreadPriority.Highest;
 
         ble = new BLE();
         
@@ -109,7 +106,7 @@ public class BLEArduinoVR : MonoBehaviour
 
     // Update is called once per frame
     //Inputting data is handled by readingThread, Outputting data in Update()
-    public void updateBLE()
+    void Update()
     {
         if (!ble.isConnected)
         {
@@ -133,9 +130,10 @@ public class BLEArduinoVR : MonoBehaviour
             int data = ringBuffer[bufferReadIndex & RING_BUFFER_MODULUS_MASK];
 
             //Consider using this to send data? https://www.ascii-code.com/
-            InputVal = (data == 1) ? true : false; //Can only be 0 or 1, so store as a bool :)
+            InputVal = (data == 0) ? true : false; //Can only be 0 or 1, so store as a bool :)
             if (InputVal)
             {
+                Debug.Log("Triggered");
                 TriggerPress.Invoke();
             }
 
